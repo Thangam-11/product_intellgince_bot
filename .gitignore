@@ -1,0 +1,14 @@
+ragvenv/
+__pycache__/
+*.pyc
+.env
+.env
+*.log
+*.sqlite3   
+.DS_Store
+.idea/
+.vscode/    
+*.egg-info/
+dist/
+data/
+build/

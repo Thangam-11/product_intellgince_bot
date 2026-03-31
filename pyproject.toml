@@ -1,0 +1,61 @@
+[project]
+name = "customer-support-bot"
+version = "1.0.0"
+description = "Production-grade RAG-powered customer support product-intelligence bot"
+requires-python = ">=3.10"
+dependencies = [
+    # ⚡ Backend
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+
+    # 🧠 LangChain
+    "langchain",
+    "langchain-core",
+    "langchain-community",
+    "langchain-openai",
+    "langchain-google-genai",
+    "langchain-astradb",
+
+    # 🤖 AI Models
+    "google-generativeai",
+    "openai",
+
+    # 🗄️ Vector DB
+    "astrapy",
+
+    # ⚙️ Config & Utils
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+    "requests",
+    "httpx",
+    "tenacity",
+    "tqdm",
+
+    # 🔒 Rate limiting
+    "slowapi",
+
+    # 💾 Cache
+    "redis",
+
+    # 📊 Data
+    "pandas",
+]
+
+# ✅ Dev/test dependencies separate
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "ruff",
+    "mypy",
+    "coverage",
+    "ragas",
+]   
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
