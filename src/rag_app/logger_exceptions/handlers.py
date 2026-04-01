@@ -1,8 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
-from src.rag_app.logger_exceptions.exception import CustomerproductinteglligenceException
-from src.rag_app.utils.logger import get_logger 
+from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from src.rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -18,13 +22,13 @@ def register_exception_handlers(app):
       - Unhandled exceptions → No request_id in response, impossible to trace in logs
     """
 
-    @app.exception_handler(CustomerproductinteglligenceException)
+    @app.exception_handler(CustomerProductIntelligenceException)
     async def bot_exception_handler(
-        request: Request, exc: CustomerproductinteglligenceException
+        request: Request, exc: CustomerProductIntelligenceException
     ):
         request_id = getattr(request.state, "request_id", "unknown")
         logger.error(
-            "CustomerproductinteglligenceException",
+            "CustomerProductIntelligenceException",
             extra={
                 "request_id": request_id,
                 "error": str(exc),
