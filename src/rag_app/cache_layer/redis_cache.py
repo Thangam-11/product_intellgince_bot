@@ -27,24 +27,21 @@ def setup_cache(embeddings) -> bool:
         App continues working without cache — just slower and more expensive.
     """
     settings = get_settings()
-
     try:
         # Test Redis connectivity before setting up cache
         client = redis.from_url(
-            settings.redis_url,         # ✅ from settings, not hardcoded
+            settings.redis_url,
             socket_connect_timeout=2,
         )
         client.ping()
 
         redis_cache = RedisSemanticCache(
-            redis_url=settings.redis_url,           # ✅ from settings, not hardcoded
-            embedding=embeddings,                   # ✅ pass full embeddings object, not .embed_query
+            redis_url=settings.redis_url,
+            embedding=embeddings,
             score_threshold=0.2,
         )
 
-        langchain.llm_cache = redis_cache           # ✅ actually apply cache to LangChain globally
-                                                    # without this line the cache is built but never used
-
+        langchain.llm_cache = redis_cache  # apply cache to LangChain globally
         logger.info(
             "Redis semantic cache enabled",
             extra={"redis_url": settings.redis_url},
@@ -53,7 +50,6 @@ def setup_cache(embeddings) -> bool:
 
     except Exception as e:
         # Redis being down should NOT crash the app
-        # Every request goes to the LLM directly — more expensive but functional
         logger.warning(
             "Redis unavailable — running without semantic cache",
             extra={"error": str(e)},
@@ -65,7 +61,6 @@ def clear_cache() -> int:
     """
     Clears all cached LLM responses.
     Useful after updating product data or prompt templates.
-
     Returns: number of keys deleted
     """
     settings = get_settings()
@@ -76,13 +71,14 @@ def clear_cache() -> int:
             client.delete(*keys)
         logger.info("Cache cleared", extra={"keys_deleted": len(keys)})
         return len(keys)
+
     except Exception as e:
         logger.error("Failed to clear cache", extra={"error": str(e)})
         return 0
 
 
 if __name__ == "__main__":
-    from app.core.model_loader import get_model_loader
+    from src.rag_app.core_app.model_loader import get_model_loader  # ← fixed import path
 
     embeddings = get_model_loader().load_embeddings()
 

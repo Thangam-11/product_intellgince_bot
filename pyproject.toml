@@ -8,7 +8,6 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-multipart",
-
     # 🧠 LangChain
     "langchain",
     "langchain-core",
@@ -16,14 +15,11 @@ dependencies = [
     "langchain-openai",
     "langchain-google-genai",
     "langchain-astradb",
-
     # 🤖 AI Models
     "google-generativeai",
     "openai",
-
     # 🗄️ Vector DB
     "astrapy",
-
     # ⚙️ Config & Utils
     "pydantic",
     "pydantic-settings",
@@ -32,15 +28,13 @@ dependencies = [
     "httpx",
     "tenacity",
     "tqdm",
-
     # 🔒 Rate limiting
     "slowapi",
-
     # 💾 Cache
     "redis",
-
     # 📊 Data
     "pandas",
+    "ipykernel>=7.2.0",
 ]
 
 # ✅ Dev/test dependencies separate

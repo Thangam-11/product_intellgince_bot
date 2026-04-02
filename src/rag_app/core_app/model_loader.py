@@ -1,106 +1,61 @@
-from typing import List
 from functools import lru_cache
-from langchain_astradb import AstraDBVectorStore
-from langchain_core.documents import Document
-from src.rag_app.configure.config_settings import get_settings  # ✅ fixed import path
-from src.rag_app.core_app.model_loader import get_model_loader  # ✅ singleton
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from src.rag_app.configure.config_settings import get_settings, Settings
 from src.rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class Retriever:
-    """
-    Manages AstraDB vector store connection and similarity search.
-      - Uses get_model_loader() singleton (no duplicate model loads)
-      - Lazy-loads vstore on first use (fast container startup)
-      - Caches vstore + retriever (no reconnect per request)
-      - Structured logging instead of print()
-      - Wraps all errors in CustomerSupportBotException 
-    """
+class ModelLoader:
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self._embeddings = None
+        self._llm = None
 
-    def __init__(self):
-        self.settings = get_settings()
-        self.model_loader = get_model_loader()  # ✅ singleton
-        self._vstore: AstraDBVectorStore | None = None
-        self._retriever = None
-
-    def _get_vstore(self) -> AstraDBVectorStore:
-        """Lazy-initializes AstraDB connection."""
-        if self._vstore is None:
-            try:
-                self._vstore = AstraDBVectorStore(
-                    embedding=self.model_loader.load_embeddings(),
-                    collection_name=self.settings.astra_db_collection,
-                    api_endpoint=self.settings.astra_db_api_endpoint,
-                    token=self.settings.astra_db_application_token,
-                    namespace=self.settings.astra_db_keyspace,
-                )
-                logger.info(
-                    "AstraDB connected",
-                    extra={"collection": self.settings.astra_db_collection},
-                )
-            except Exception as e:
-                raise CustomerProductIntelligenceException("Failed to connect to AstraDB", e)
-        return self._vstore
-
-    def load_retriever(self):
-        """Returns cached LangChain retriever."""
-        if self._retriever is None:
-            vstore = self._get_vstore()
-            self._retriever = vstore.as_retriever(
-                search_kwargs={"k": self.settings.retriever_top_k}
-            )
+    def load_embeddings(self) -> GoogleGenerativeAIEmbeddings:
+        if not self._embeddings:
             logger.info(
-                "Retriever ready",
-                extra={"top_k": self.settings.retriever_top_k},
+                "Loading embedding model",
+                extra={"model": self.settings.embedding_model},
             )
-        return self._retriever
+            self._embeddings = GoogleGenerativeAIEmbeddings(
+                model=self.settings.embedding_model,
+                google_api_key=self.settings.gemini_api_key,
+            )
+        return self._embeddings
 
-    async def similarity_search(self, query: str) -> List[Document]:
-        """
-        Direct similarity search — bypasses LangChain retriever.
-        Useful for evaluation and debugging retrieval quality.
-        """
-        try:
-            vstore = self._get_vstore()
-            return await vstore.asimilarity_search(
-                query, k=self.settings.retriever_top_k
+    def load_llm(self) -> ChatOpenAI:
+        if not self._llm:
+            if not self.settings.open_router_api_key:
+                raise ValueError("Missing OpenRouter API key")
+            logger.info(
+                "Loading LLM via OpenRouter",
+                extra={"model": self.settings.llm_model},
             )
-        except Exception as e:
-            raise CustomerProductIntelligenceException(
-                f"Similarity search failed for query: '{query}'", e
+            self._llm = ChatOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=self.settings.open_router_api_key,
+                model=self.settings.llm_model,
+                temperature=0.7,
+                request_timeout=30,
+                max_retries=2,
             )
-
-    def check_connection(self) -> bool:
-        """
-        Health check — verifies AstraDB is reachable.
-        Called by /ready endpoint.
-        """
-        try:
-            self._get_vstore()
-            return True
-        except Exception:
-            return False
+        return self._llm
 
 
 @lru_cache()
-def get_retriever() -> Retriever:
-    """Process-level singleton — mirrors get_model_loader() pattern."""
-    return Retriever()
+def get_model_loader() -> ModelLoader:
+    return ModelLoader(settings=get_settings())
 
 
 if __name__ == "__main__":
-    retriever = get_retriever()
+    loader = get_model_loader()
 
-    print("Testing connection...")
-    ok = retriever.check_connection()
-    print(f"✅ AstraDB connected: {ok}")
+    print("Testing embeddings...")
+    embeddings = loader.load_embeddings()
+    print(f"✅ Embeddings loaded: {type(embeddings).__name__}")
 
-    print("\nTesting retriever...")
-    lc_retriever = retriever.load_retriever()
-    results = lc_retriever.invoke("What is your return policy?")
-    print(f"✅ Retrieved {len(results)} documents")
-    for doc in results:
-        print(f"  - {doc.page_content[:80]}...")
+    print("Testing LLM...")
+    llm = loader.load_llm()
+    print(f"✅ LLM loaded: {type(llm).__name__}")

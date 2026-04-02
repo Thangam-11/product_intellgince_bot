@@ -5,11 +5,11 @@ from langchain_astradb import AstraDBVectorStore
 from tqdm import tqdm
 from src.rag_app.configure.config_settings import get_settings
 from src.rag_app.core_app.model_loader import get_model_loader
-from rag_app.utils.logger import get_logger
-from rag_app.logger_exceptions.exception import CustomerSupportBotException
+from src.rag_app.utils.logger import get_logger
+from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
 
 logger = get_logger(__name__)
-
+    
 BATCH_SIZE = 20       # ✅ reduced from 100 — stay under free tier limit
 BATCH_DELAY = 15      # ✅ 15s between batches — 20 docs/batch = safe under 100 req/min
 RATE_LIMIT_WAIT = 60  # ✅ if 429 hit anyway, wait 60s before moving to next batch
@@ -33,7 +33,7 @@ def get_vector_store() -> AstraDBVectorStore:
         logger.info("AstraDB connection established")
         return vstore
     except Exception as e:
-        raise CustomerSupportBotException("Failed to connect to AstraDB", e)
+        raise CustomerProductIntelligenceException("Failed to connect to AstraDB", e)
 
 
 def store_documents(documents: List[Document]) -> int:
@@ -50,7 +50,7 @@ def store_documents(documents: List[Document]) -> int:
     # Validate all docs have an ID before starting — fail fast
     missing_ids = [i for i, doc in enumerate(documents) if "id" not in doc.metadata]
     if missing_ids:
-        raise CustomerSupportBotException(
+        raise CustomerProductIntelligenceException(
             f"Documents at indices {missing_ids} are missing metadata['id']. "
             "All documents must have a content-hash ID for idempotent upserts."
         )

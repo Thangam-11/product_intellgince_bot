@@ -1,18 +1,18 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles          # ✅ add this
-from fastapi.responses import FileResponse           # ✅ add this
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-from app.config.settings import get_settings
-from app.api_services.routers import router
-from app.api_services.middleware.logging_middleware import RequestLoggingMiddleware
-from app.api_services.middleware.rate_limit import get_limiter
-from app.exceptions.handlers import register_exception_handlers
-from app.redish_cache.redis_cache import setup_cache
-from app.core.model_loader import get_model_loader
-from app.utils.logger import get_logger
+from src.rag_app.configure.config_settings import get_settings
+from src.rag_app.api_services.services.router import router
+from src.rag_app.api_services.middleware.logging_middleware import RequestLoggingMiddleware
+from src.rag_app.api_services.middleware.rate_limit import get_limiter
+from src.rag_app.logger_exceptions.handlers import register_exception_handlers
+from src.rag_app.cache_layer.redis_cache import setup_cache
+from src.rag_app.core_app.model_loader import get_model_loader
+from src.rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -20,8 +20,8 @@ settings = get_settings()
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Customer Support Bot",
-        description="AI-powered e-commerce support using RAG",
+        title="Customer Product Intelligence Bot",
+        description="AI-powered e-commerce product intelligence using RAG",
         version="1.0.0",
         docs_url="/docs" if settings.environment != "production" else None,
         redoc_url=None,
@@ -52,10 +52,10 @@ def create_app() -> FastAPI:
     # ── API Routes ──
     app.include_router(router)
 
-    # ── Serve frontend ──                           # ✅ NEW
+    # ── Serve frontend ──
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-    @app.get("/")                                    # ✅ NEW — opens chat UI at root
+    @app.get("/")
     async def serve_frontend():
         return FileResponse("static/index.html")
 
@@ -79,7 +79,7 @@ app = create_app()
 
 if __name__ == "__main__":
     uvicorn.run(
-        "app.main:app",
+        "src.rag_app.main:app",
         host="0.0.0.0",
         port=8000,
         reload=settings.environment == "development",

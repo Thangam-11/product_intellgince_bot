@@ -1,78 +1,112 @@
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
-from app.core.retrieval import get_retriever          # ✅ singleton
-from app.api_services.schemas.chat import HealthResponse, ReadyResponse  # ✅ typed responses
-from app.config.settings import get_settings
-from app.utils.logger import get_logger
-import time
+from typing import List
+from functools import lru_cache
+from langchain_astradb import AstraDBVectorStore
+from langchain_core.documents import Document
+from src.rag_app.configure.config_settings import get_settings
+from src.rag_app.core_app.model_loader import get_model_loader
+from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from src.rag_app.utils.logger import get_logger
 
-router = APIRouter(tags=["Health"])
 logger = get_logger(__name__)
 
-_start_time = time.time()
-
-# Simple in-memory counters (use Redis/CloudWatch in production)
-_counters = {"requests": 0, "errors": 0, "cache_hits": 0}
+_retriever_instance: "Retriever | None" = None
 
 
-def increment(counter: str):
-    _counters[counter] = _counters.get(counter, 0) + 1
-
-
-@router.get("/health", response_model=HealthResponse)
-async def health():
+class Retriever:
     """
-    Liveness probe — 'Is the process alive?'
-    Called by ECS every 30 seconds.
-    Rules:
-      - Must be FAST (< 100ms)
-      - Must NOT call external services (AstraDB, Redis)
-      - Must NOT require authentication
+    Manages AstraDB vector store connection and similarity search.
+      - Uses get_model_loader() singleton (no duplicate model loads)
+      - Lazy-loads vstore on first use (fast container startup)
+      - Caches vstore + retriever (no reconnect per request)
+      - Structured logging instead of print()
+      - Wraps all errors in CustomerProductIntelligenceException
     """
-    return HealthResponse(
-        status="ok",
-        environment=get_settings().environment,
-    )
+
+    def __init__(self):
+        self.settings = get_settings()
+        self.model_loader = get_model_loader()
+        self._vstore: AstraDBVectorStore | None = None
+        self._retriever = None
+
+    def _get_vstore(self) -> AstraDBVectorStore:
+        """Lazy-initializes AstraDB connection."""
+        if self._vstore is None:
+            try:
+                self._vstore = AstraDBVectorStore(
+                    embedding=self.model_loader.load_embeddings(),
+                    collection_name=self.settings.astra_db_collection,
+                    api_endpoint=self.settings.astra_db_api_endpoint,
+                    token=self.settings.astra_db_application_token,
+                    namespace=self.settings.astra_db_keyspace,
+                )
+                logger.info(
+                    "AstraDB connected",
+                    extra={"collection": self.settings.astra_db_collection},
+                )
+            except Exception as e:
+                raise CustomerProductIntelligenceException(
+                    "Failed to connect to AstraDB", e
+                )
+        return self._vstore
+
+    def load_retriever(self):
+        """Returns cached LangChain retriever."""
+        if self._retriever is None:
+            vstore = self._get_vstore()
+            self._retriever = vstore.as_retriever(
+                search_kwargs={"k": self.settings.retriever_top_k}
+            )
+            logger.info(
+                "Retriever ready",
+                extra={"top_k": self.settings.retriever_top_k},
+            )
+        return self._retriever
+
+    async def similarity_search(self, query: str) -> List[Document]:
+        """
+        Direct similarity search — bypasses LangChain retriever.
+        Useful for evaluation and debugging retrieval quality.
+        """
+        try:
+            vstore = self._get_vstore()
+            return await vstore.asimilarity_search(
+                query, k=self.settings.retriever_top_k
+            )
+        except Exception as e:
+            raise CustomerProductIntelligenceException(
+                f"Similarity search failed for query: '{query}'", e
+            )
+
+    def check_connection(self) -> bool:
+        """
+        Health check — verifies AstraDB is reachable.
+        Called by /ready endpoint.
+        """
+        try:
+            self._get_vstore()
+            return True
+        except Exception:
+            return False
 
 
-@router.get("/ready", response_model=ReadyResponse)
-async def ready():
-    """
-    Readiness probe — 'Is the app ready to receive traffic?'
-    Called by load balancer before routing requests here.
-    If non-200, load balancer stops sending traffic to this instance.
-    Unlike /health, this DOES check external dependencies.
-    """
-    db_ok = get_retriever().check_connection()   # ✅ singleton
-
-    if not db_ok:
-        logger.warning("Readiness check failed — AstraDB unreachable")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "not_ready",
-                "db": "unavailable",
-            },
-        )
-
-    return ReadyResponse(
-        status="ready",
-        db="connected",
-    )
+def get_retriever() -> Retriever:
+    """Process-level singleton — mirrors get_model_loader() pattern."""
+    global _retriever_instance
+    if _retriever_instance is None:
+        _retriever_instance = Retriever()
+    return _retriever_instance
 
 
-@router.get("/metrics")
-async def metrics():
-    """
-    Basic application metrics.
-    In production, replace with Prometheus or ship to CloudWatch.
-    """
-    return JSONResponse({
-        "uptime_seconds": round(time.time() - _start_time, 1),
-        "requests_total": _counters["requests"],
-        "errors_total": _counters["errors"],
-        "cache_hits_total": _counters["cache_hits"],
-        "error_rate": round(
-            _counters["errors"] / max(_counters["requests"], 1), 4
-        ),
-    })
+if __name__ == "__main__":
+    retriever = get_retriever()
+
+    print("Testing connection...")
+    ok = retriever.check_connection()
+    print(f"✅ AstraDB connected: {ok}")
+
+    print("\nTesting retriever...")
+    lc_retriever = retriever.load_retriever()
+    results = lc_retriever.invoke("What is your return policy?")
+    print(f"✅ Retrieved {len(results)} documents")
+    for doc in results:
+        print(f"  - {doc.page_content[:80]}...")
