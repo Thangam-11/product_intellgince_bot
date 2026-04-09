@@ -12,6 +12,7 @@ logger = get_logger(__name__)
 _retriever_instance: "Retriever | None" = None
 
 
+
 class Retriever:
     """
     Manages AstraDB vector store connection and similarity search.

@@ -9,9 +9,10 @@ from src.rag_app.utils.logger import get_logger
 from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
 
 logger = get_logger(__name__)
-    
+
 BATCH_SIZE = 20       # ✅ reduced from 100 — stay under free tier limit
 BATCH_DELAY = 15      # ✅ 15s between batches — 20 docs/batch = safe under 100 req/min
+
 RATE_LIMIT_WAIT = 60  # ✅ if 429 hit anyway, wait 60s before moving to next batch
 
 

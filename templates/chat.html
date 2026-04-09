@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Assistant</title>
+<link rel="stylesheet" href="/static/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #0d0f14;
+  --surface:    #161921;
+  --surface2:   #1e2130;
+  --border:     #2a2f42;
+  --border2:    #353c54;
+  --blue:       #4f8ef7;
+  --blue-dim:   #2563eb;
+  --blue-glow:  rgba(79,142,247,0.15);
+  --blue-light: rgba(79,142,247,0.08);
+  --text:       #e8eaf0;
+  --text-muted: #7b82a0;
+  --text-dim:   #4a5068;
+  --green:      #22c55e;
+  --radius-sm:  8px;
+  --radius:     14px;
+  --radius-lg:  20px;
+  --font:       'Plus Jakarta Sans', sans-serif;
+  --mono:       'JetBrains Mono', monospace;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); display: flex; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 256px; background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0; padding: 20px 12px; gap: 6px;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 8px 20px; border-bottom: 1px solid var(--border); margin-bottom: 8px;
+}
+.brand-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-dim));
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px var(--blue-glow); flex-shrink: 0;
+}
+.brand-icon svg { width: 18px; height: 18px; fill: white; }
+.brand-name { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; }
+.brand-tag  { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.new-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 12px; background: var(--blue-light);
+  border: 1px solid rgba(79,142,247,0.25); border-radius: var(--radius-sm);
+  color: var(--blue); font-size: 13px; font-weight: 500; font-family: var(--font);
+  cursor: pointer; transition: all 0.15s; margin-bottom: 4px;
+}
+.new-btn:hover { background: rgba(79,142,247,0.15); border-color: var(--blue); }
+.new-btn svg { width: 15px; height: 15px; fill: currentColor; }
+.nav-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-dim); padding: 12px 8px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--text-muted);
+  font-size: 12.5px; transition: all 0.15s; border: 1px solid transparent; line-height: 1.35;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+.nav-item svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; opacity: 0.7; }
+.sidebar-bottom { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+.online-badge { display: flex; align-items: center; gap: 7px; padding: 6px 10px; color: var(--green); font-size: 12px; font-weight: 500; }
+.pulse { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.75); } }
+
+/* MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  padding: 14px 28px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.topbar-title { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+.topbar-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.model-chip {
+  display: flex; align-items: center; gap: 6px; background: var(--surface);
+  border: 1px solid var(--border); padding: 5px 10px; border-radius: 100px;
+  font-size: 11px; color: var(--text-muted); font-family: var(--mono);
+}
+.model-dot { width: 5px; height: 5px; background: var(--blue); border-radius: 50%; box-shadow: 0 0 6px var(--blue); }
+
+/* CHAT */
+.chat { flex: 1; overflow-y: auto; padding: 28px 0; scroll-behavior: smooth; }
+.chat::-webkit-scrollbar { width: 4px; }
+.chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.msgs { max-width: 740px; margin: 0 auto; padding: 0 28px; display: flex; flex-direction: column; gap: 24px; }
+
+/* Welcome */
+.welcome { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 56px 0 32px; gap: 14px; }
+.welcome-orb {
+  width: 64px; height: 64px; background: linear-gradient(135deg, var(--blue), var(--blue-dim));
+  border-radius: 20px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 40px var(--blue-glow), 0 8px 24px rgba(0,0,0,0.3); margin-bottom: 6px;
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+.welcome-orb svg { width: 30px; height: 30px; fill: white; }
+.welcome h1 { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.04em; }
+.welcome p  { font-size: 14px; color: var(--text-muted); max-width: 360px; line-height: 1.65; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+.chip {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+  padding: 8px 14px; border-radius: 100px; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; font-family: var(--font);
+}
+.chip:hover { background: var(--surface2); border-color: var(--blue); color: var(--blue); transform: translateY(-1px); }
+
+/* Messages */
+.msg { display: flex; gap: 12px; align-items: flex-start; animation: msgIn 0.28s cubic-bezier(0.16,1,0.3,1); }
+@keyframes msgIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.msg.user { flex-direction: row-reverse; }
+.av {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 11px; font-weight: 600; margin-top: 2px;
+}
+.av-bot { background: linear-gradient(135deg, var(--blue), var(--blue-dim)); box-shadow: 0 0 16px var(--blue-glow); }
+.av-bot svg { width: 15px; height: 15px; fill: white; }
+.av-user { background: var(--surface2); border: 1px solid var(--border2); color: var(--text-muted); font-size: 10px; }
+.msg-body { display: flex; flex-direction: column; gap: 5px; max-width: 74%; }
+.bubble { padding: 12px 16px; border-radius: var(--radius-lg); font-size: 14px; line-height: 1.7; word-break: break-word; }
+.bot-bubble  { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+.user-bubble { background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: white; border-bottom-right-radius: 4px; box-shadow: 0 4px 16px rgba(79,142,247,0.2); }
+.msg-time { font-size: 10px; color: var(--text-dim); font-family: var(--mono); padding: 0 4px; }
+.msg.user .msg-time { text-align: right; }
+
+/* Typing */
+.typing-wrap { display: flex; gap: 12px; align-items: flex-start; animation: msgIn 0.28s cubic-bezier(0.16,1,0.3,1); }
+.typing-bubble {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); border-bottom-left-radius: 4px;
+  padding: 14px 18px; display: flex; gap: 5px; align-items: center;
+}
+.dot { width: 7px; height: 7px; background: var(--blue); border-radius: 50%; animation: dotB 1.3s infinite; opacity: 0.6; }
+.dot:nth-child(2) { animation-delay: 0.18s; }
+.dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes dotB { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-7px); opacity:1; } }
+
+/* INPUT */
+.input-wrap { padding: 16px 28px 22px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.input-inner {
+  max-width: 740px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); display: flex; align-items: flex-end; gap: 8px;
+  padding: 10px 10px 10px 16px; transition: all 0.15s;
+}
+.input-inner:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-light); }
+textarea#msg {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-size: 14px; font-family: var(--font); color: var(--text);
+  resize: none; max-height: 160px; min-height: 24px; line-height: 1.55; padding: 2px 0;
+}
+textarea#msg::placeholder { color: var(--text-dim); }
+.send-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-dim));
+  border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.15s; box-shadow: 0 4px 12px rgba(79,142,247,0.25);
+}
+.send-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(79,142,247,0.35); }
+.send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.send-btn svg { width: 16px; height: 16px; fill: white; }
+.hint { max-width: 740px; margin: 8px auto 0; font-size: 11px; color: var(--text-dim); text-align: center; }
+kbd { background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-family: var(--mono); color: var(--text-muted); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 90px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #2d1515; border: 1px solid #7f2020; color: #f87171;
+  padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .msgs { padding: 0 16px; }
+  .input-wrap { padding: 12px 16px 18px; }
+  .msg-body { max-width: 86%; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">SupportAI</div>
+      <div class="brand-tag">Product Assistant</div>
+    </div>
+  </div>
+
+  <button class="new-btn" onclick="newChat()">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    New conversation
+  </button>
+
+  <div class="nav-label">Quick questions</div>
+  <div class="nav-item" onclick="sendSug('Are boAt headphones good for bass?')">
+    <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    boAt headphones for bass?
+  </div>
+  <div class="nav-item" onclick="sendSug('Best budget headphones under 500?')">
+    <svg viewBox="0 0 24 24"><path d="M11.5 2C6.81 2 3 5.81 3 10.5S6.81 19 11.5 19h.5v3c4.86-2.34 8-7 8-11.5C20 5.81 16.19 2 11.5 2z"/></svg>
+    Best budget headphones
+  </div>
+  <div class="nav-item" onclick="sendSug('How is the sound quality of boAt BassHeads 100?')">
+    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+    Sound quality review
+  </div>
+  <div class="nav-item" onclick="sendSug('Are boAt headphones durable?')">
+    <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+    Durability concerns
+  </div>
+  <div class="nav-item" onclick="sendSug('Compare boAt BassHeads 100 vs 225')">
+    <svg viewBox="0 0 24 24"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5m6-18h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5m-4-9h2"/></svg>
+    Compare models
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="online-badge"><div class="pulse"></div>AI Online · RAG Enabled</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Customer Support Assistant</div>
+      <div class="topbar-sub">Powered by product reviews · AstraDB · OpenRouter</div>
+    </div>
+    <div class="model-chip"><div class="model-dot"></div>llama-3-8b-instruct</div>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="msgs" id="msgs">
+      <div class="welcome" id="welcome">
+        <div class="welcome-orb">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+        </div>
+        <h1>How can I help?</h1>
+        <p>Ask anything about our products, sound quality, reviews, or recommendations.</p>
+        <div class="chips">
+          <button class="chip" onclick="sendSug('Are boAt headphones good for bass?')">🎧 boAt for bass?</button>
+          <button class="chip" onclick="sendSug('Best budget headphones under 500?')">💰 Best under ₹500</button>
+          <button class="chip" onclick="sendSug('How durable are boAt BassHeads?')">🔧 Durability</button>
+          <button class="chip" onclick="sendSug('Compare boAt BassHeads 100 vs 225')">⚖️ Compare models</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-wrap">
+    <div class="input-inner">
+      <textarea id="msg" placeholder="Ask about any product..." rows="1" maxlength="1000"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="send()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="hint">Press <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let busy = false;
+const inp = document.getElementById('msg');
+const btn = document.getElementById('sendBtn');
+const msgsEl = document.getElementById('msgs');
+const chatEl = document.getElementById('chat');
+const welcome = document.getElementById('welcome');
+const toast = document.getElementById('toast');
+
+inp.addEventListener('input', () => {
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 160) + 'px';
+});
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+function newChat() { msgsEl.innerHTML = ''; msgsEl.appendChild(welcome); welcome.style.display = 'flex'; }
+function sendSug(t) { inp.value = t; send(); }
+function hideWelcome() { welcome.style.display = 'none'; }
+function ts() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function fmt(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+}
+function scroll() { setTimeout(() => chatEl.scrollTop = chatEl.scrollHeight, 60); }
+
+function addUser(text) {
+  hideWelcome();
+  const d = document.createElement('div');
+  d.className = 'msg user';
+  d.innerHTML = `<div class="av av-user">You</div><div class="msg-body"><div class="bubble user-bubble">${esc(text)}</div><div class="msg-time">${ts()}</div></div>`;
+  msgsEl.appendChild(d); scroll();
+}
+
+function addBot(text, rid) {
+  const d = document.createElement('div');
+  d.className = 'msg';
+  d.innerHTML = `
+    <div class="av av-bot"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+    <div class="msg-body"><div class="bubble bot-bubble">${fmt(text)}</div><div class="msg-time">${ts()}${rid?' · '+rid.slice(0,8):''}</div></div>`;
+  msgsEl.appendChild(d); scroll();
+}
+
+function showTyping() {
+  hideWelcome();
+  const d = document.createElement('div');
+  d.className = 'typing-wrap'; d.id = 'typing';
+  d.innerHTML = `<div class="av av-bot"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  msgsEl.appendChild(d); scroll();
+}
+
+function hideTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+function showToast(msg) {
+  toast.textContent = msg; toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+function setLoading(v) { busy = v; btn.disabled = v; inp.disabled = v; }
+
+async function send() {
+  const msg = inp.value.trim();
+  if (!msg || busy) return;
+  inp.value = ''; inp.style.height = 'auto';
+  addUser(msg); setLoading(true); showTyping();
+  try {
+    // ✅ Send JSON body matching ChatRequest schema {query: string}
+    const res = await fetch(`${API}/get`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: msg })
+    });
+    hideTyping();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+    const data = await res.json();
+    addBot(data.response, data.request_id);
+  } catch (err) {
+    hideTyping();
+    showToast(err.message === 'Failed to fetch'
+      ? 'Cannot connect — is the backend running?'
+      : err.message || 'Something went wrong.');
+  } finally {
+    setLoading(false); inp.focus();
+  }
+}
+</script>
+</body>
+</html>

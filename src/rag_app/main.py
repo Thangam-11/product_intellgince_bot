@@ -1,8 +1,8 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from src.rag_app.configure.config_settings import get_settings
@@ -16,6 +16,7 @@ from src.rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 settings = get_settings()
+templates = Jinja2Templates(directory="templates")
 
 
 def create_app() -> FastAPI:
@@ -52,12 +53,13 @@ def create_app() -> FastAPI:
     # ── API Routes ──
     app.include_router(router)
 
-    # ── Serve frontend ──
+    # ── Static files ──
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+    # ── Serve frontend ──                        # ✅ only one route
     @app.get("/")
-    async def serve_frontend():
-        return FileResponse("static/index.html")
+    async def serve_frontend(request: Request):
+        return templates.TemplateResponse("chat.html", {"request": request})
 
     # ── Startup ──
     @app.on_event("startup")

@@ -22,7 +22,7 @@ def load_csv(csv_path: str) -> pd.DataFrame:
       3. File is not empty after loading
       4. Rows missing ANY required field are dropped
 
-    Returns: clean DataFrame ready for transformation
+    Returns: clean DataFrame ready for tran sformation
     Raises: CustomerProductIntelligenceException if any check fails
     """
     try:
