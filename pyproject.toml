@@ -59,3 +59,5 @@ pythonpath = ["."]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = ["e2e: marks tests as end-to-end (deselect with '-m not e2e')"]
+addopts = "-m 'not e2e'"          # ← skips e2e by default
