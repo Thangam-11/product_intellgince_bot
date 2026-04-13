@@ -1,15 +1,25 @@
+# ⚡ Backend
 fastapi
 uvicorn[standard]
 python-multipart
+jinja2
+
+# 🧠 LangChain
 langchain
 langchain-core
 langchain-community
 langchain-openai
 langchain-google-genai
 langchain-astradb
+
+# 🤖 AI Models
 google-generativeai
 openai
+
+# 🗄️ Vector DB
 astrapy
+
+# ⚙️ Config & Utils
 pydantic
 pydantic-settings
 python-dotenv
@@ -17,6 +27,21 @@ requests
 httpx
 tenacity
 tqdm
+
+# 🔒 Rate limiting
 slowapi
+
+# 💾 Cache
 redis
+
+# 📊 Data
 pandas
+
+# 🧪 Testing & RAG Evals
+pytest
+pytest-asyncio
+pytest-mock
+httpx
+coverage
+ragas
+datasets

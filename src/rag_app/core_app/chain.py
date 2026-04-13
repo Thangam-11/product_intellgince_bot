@@ -1,3 +1,5 @@
+import hashlib
+import redis as redis_client
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -6,18 +8,32 @@ from src.rag_app.core_app.retrieval import get_retriever
 from src.rag_app.core_app.model_loader import get_model_loader
 from src.rag_app.prompts_lib.prompt import PROMPT_TEMPLATES
 from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from src.rag_app.configure.config_settings import get_settings
 from src.rag_app.utils.logger import get_logger
 from typing import AsyncIterator
 
 logger = get_logger(__name__)
 
 _chain = None
+CACHE_TTL = 3600  # 1 hour
+
+
+def _get_redis():
+    """Returns Redis client."""
+    return redis_client.from_url(
+        get_settings().redis_url,
+        socket_connect_timeout=2,
+    )
+
+
+def _cache_key(query: str) -> str:
+    """Deterministic cache key from query."""
+    return f"rag:response:{hashlib.md5(query.strip().lower().encode()).hexdigest()}"
 
 
 def _build_chain():
     """
     Builds the LangChain RAG chain.
-
     Chain flow:
       user query
         → retriever fetches top-k relevant docs from AstraDB
@@ -28,7 +44,6 @@ def _build_chain():
     retriever = get_retriever().load_retriever()
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATES["product_bot"])
     llm = get_model_loader().load_llm()
-
     return (
         {"context": retriever, "question": RunnablePassthrough()}
         | prompt
@@ -53,34 +68,54 @@ def get_chain():
 )
 async def invoke_chain(query: str) -> str:
     """
-    Invokes the RAG chain asynchronously.
-      - ainvoke() never blocks the FastAPI event loop
-      - tenacity retries up to 3x with exponential backoff
-        on transient errors (network timeouts, rate limits)
-      - Wraps errors in CustomerProductIntelligenceException
+    Invokes the RAG chain with direct Redis caching.
+      1. Check Redis — return instantly if cached
+      2. Cache MISS — call LLM, store result in Redis
+      3. TTL: 1 hour — cache auto-expires
     """
     if not query or not query.strip():
         raise CustomerProductIntelligenceException("Query cannot be empty")
+
+    # ✅ Step 1 — check cache
     try:
-        logger.info("Invoking chain", extra={"query_length": len(query)})
+        r = _get_redis()
+        cached = r.get(_cache_key(query))
+        if cached:
+            logger.info("Cache HIT", extra={"query_length": len(query)})
+            return cached.decode("utf-8")
+    except Exception as e:
+        logger.warning("Redis unavailable for read", extra={"error": str(e)})
+
+    # ✅ Step 2 — cache miss, call LLM
+    try:
+        logger.info("Cache MISS — invoking chain", extra={"query_length": len(query)})
         chain = get_chain()
         result = await chain.ainvoke(query)
         logger.info("Chain completed", extra={"response_length": len(result)})
-        return result
     except CustomerProductIntelligenceException:
         raise
     except Exception as e:
         raise CustomerProductIntelligenceException("Chain invocation failed", e)
 
+    # ✅ Step 3 — store in cache
+    try:
+        r = _get_redis()
+        r.setex(_cache_key(query), CACHE_TTL, result)
+        logger.info("Response cached", extra={"ttl": CACHE_TTL})
+    except Exception as e:
+        logger.warning("Redis unavailable for write", extra={"error": str(e)})
+
+    return result
+
 
 async def invoke_chain_stream(query: str) -> AsyncIterator[str]:
     """
     Streams the LLM response token by token.
-    Without: user waits 10s staring at blank screen, then sees full answer.
-    With:    user sees text appearing word by word after ~0.5s (like ChatGPT).
+    Note: streaming bypasses cache — use /chat for cached responses.
     """
     if not query or not query.strip():
         raise CustomerProductIntelligenceException("Query cannot be empty")
+
     try:
         chain = get_chain()
         async for chunk in chain.astream(query):
@@ -97,6 +132,10 @@ if __name__ == "__main__":
     async def test():
         print("Testing RAG chain...")
         result = await invoke_chain("Are boAt headphones good for bass?")
-        print(f"\n✅ Response:\n{result}")
+        print(f"\n✅ First request (cache MISS):\n{result}")
+
+        print("\nTesting cache hit...")
+        result2 = await invoke_chain("Are boAt headphones good for bass?")
+        print(f"✅ Second request (cache HIT):\n{result2}")
 
     asyncio.run(test())

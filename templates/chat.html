@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Support Assistant</title>
-<link rel="stylesheet" href="/static/style.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -134,6 +133,14 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); disp
 .msg-time { font-size: 10px; color: var(--text-dim); font-family: var(--mono); padding: 0 4px; }
 .msg.user .msg-time { text-align: right; }
 
+/* Char counter */
+.char-counter {
+  font-size: 10px; font-family: var(--mono); color: var(--text-dim);
+  transition: color 0.2s; padding-right: 4px; align-self: flex-end; flex-shrink: 0;
+}
+.char-counter.warn  { color: var(--text-muted); }
+.char-counter.limit { color: #f87171; }
+
 /* Typing */
 .typing-wrap { display: flex; gap: 12px; align-items: flex-start; animation: msgIn 0.28s cubic-bezier(0.16,1,0.3,1); }
 .typing-bubble {
@@ -248,7 +255,7 @@ kbd { background: var(--surface2); border: 1px solid var(--border2); border-radi
     <div class="msgs" id="msgs">
       <div class="welcome" id="welcome">
         <div class="welcome-orb">
-          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
         </div>
         <h1>How can I help?</h1>
         <p>Ask anything about our products, sound quality, reviews, or recommendations.</p>
@@ -265,6 +272,7 @@ kbd { background: var(--surface2); border: 1px solid var(--border2); border-radi
   <div class="input-wrap">
     <div class="input-inner">
       <textarea id="msg" placeholder="Ask about any product..." rows="1" maxlength="1000"></textarea>
+      <span class="char-counter" id="charCounter" aria-live="polite"></span>
       <button class="send-btn" id="sendBtn" onclick="send()">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
@@ -276,95 +284,177 @@ kbd { background: var(--surface2); border: 1px solid var(--border2); border-radi
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'http://localhost:8000';
-let busy = false;
-const inp = document.getElementById('msg');
-const btn = document.getElementById('sendBtn');
-const msgsEl = document.getElementById('msgs');
-const chatEl = document.getElementById('chat');
-const welcome = document.getElementById('welcome');
-const toast = document.getElementById('toast');
+// Derive API base from current page origin so it works in any environment.
+// Override by setting window.API_BASE before this script runs, or via a
+// meta tag / server-injected variable.
+const API = window.API_BASE || window.location.origin;
 
+const MAX_LEN = 1000;
+const WARN_AT = 800;
+
+let busy = false;
+const inp     = document.getElementById('msg');
+const btn     = document.getElementById('sendBtn');
+const msgsEl  = document.getElementById('msgs');
+const chatEl  = document.getElementById('chat');
+const welcome = document.getElementById('welcome');
+const toast   = document.getElementById('toast');
+const counter = document.getElementById('charCounter');
+
+// ── Textarea auto-resize + char counter ──────────────────────────────────────
 inp.addEventListener('input', () => {
   inp.style.height = 'auto';
   inp.style.height = Math.min(inp.scrollHeight, 160) + 'px';
+  updateCounter();
 });
+
 inp.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 
-function newChat() { msgsEl.innerHTML = ''; msgsEl.appendChild(welcome); welcome.style.display = 'flex'; }
-function sendSug(t) { inp.value = t; send(); }
+function updateCounter() {
+  const len = inp.value.length;
+  if (len >= WARN_AT) {
+    counter.textContent = `${len}/${MAX_LEN}`;
+    counter.className = 'char-counter ' + (len >= MAX_LEN ? 'limit' : 'warn');
+  } else {
+    counter.textContent = '';
+    counter.className = 'char-counter';
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function newChat() {
+  msgsEl.innerHTML = '';
+  msgsEl.appendChild(welcome);
+  // FIX: always restore display so the welcome screen is actually visible.
+  welcome.style.display = 'flex';
+}
+
+function sendSug(t) { inp.value = t; updateCounter(); send(); }
 function hideWelcome() { welcome.style.display = 'none'; }
 function ts() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
-function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
-function fmt(t) {
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+
+// FIX: escape first, then apply markdown so injected HTML in bot responses
+// cannot bypass sanitisation.
+function esc(t) {
+  return t
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
+
+function fmt(t) {
+  return esc(t)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,     '<em>$1</em>')
+    .replace(/\n/g,            '<br>');
+}
+
 function scroll() { setTimeout(() => chatEl.scrollTop = chatEl.scrollHeight, 60); }
 
+// ── Message renderers ─────────────────────────────────────────────────────────
 function addUser(text) {
   hideWelcome();
   const d = document.createElement('div');
   d.className = 'msg user';
-  d.innerHTML = `<div class="av av-user">You</div><div class="msg-body"><div class="bubble user-bubble">${esc(text)}</div><div class="msg-time">${ts()}</div></div>`;
-  msgsEl.appendChild(d); scroll();
+  d.innerHTML = `
+    <div class="av av-user">You</div>
+    <div class="msg-body">
+      <div class="bubble user-bubble">${esc(text)}</div>
+      <div class="msg-time">${ts()}</div>
+    </div>`;
+  msgsEl.appendChild(d);
+  scroll();
 }
 
 function addBot(text, rid) {
   const d = document.createElement('div');
   d.className = 'msg';
   d.innerHTML = `
-    <div class="av av-bot"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
-    <div class="msg-body"><div class="bubble bot-bubble">${fmt(text)}</div><div class="msg-time">${ts()}${rid?' · '+rid.slice(0,8):''}</div></div>`;
-  msgsEl.appendChild(d); scroll();
+    <div class="av av-bot">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    </div>
+    <div class="msg-body">
+      <div class="bubble bot-bubble">${fmt(text)}</div>
+      <div class="msg-time">${ts()}${rid ? ' · ' + rid.slice(0, 8) : ''}</div>
+    </div>`;
+  msgsEl.appendChild(d);
+  scroll();
 }
 
 function showTyping() {
   hideWelcome();
   const d = document.createElement('div');
-  d.className = 'typing-wrap'; d.id = 'typing';
-  d.innerHTML = `<div class="av av-bot"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  msgsEl.appendChild(d); scroll();
+  d.className = 'typing-wrap';
+  d.id = 'typing';
+  d.innerHTML = `
+    <div class="av av-bot">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+    </div>
+    <div class="typing-bubble">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>`;
+  msgsEl.appendChild(d);
+  scroll();
 }
 
-function hideTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+function hideTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
 
 function showToast(msg) {
-  toast.textContent = msg; toast.classList.add('show');
+  toast.textContent = msg;
+  toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-function setLoading(v) { busy = v; btn.disabled = v; inp.disabled = v; }
+function setLoading(v) {
+  busy = v;
+  btn.disabled = v;
+  inp.disabled = v;
+}
 
+// ── Send ──────────────────────────────────────────────────────────────────────
 async function send() {
   const msg = inp.value.trim();
   if (!msg || busy) return;
-  inp.value = ''; inp.style.height = 'auto';
-  addUser(msg); setLoading(true); showTyping();
+
+  inp.value = '';
+  inp.style.height = 'auto';
+  updateCounter();
+
+  addUser(msg);
+  setLoading(true);
+  showTyping();
+
   try {
-    // ✅ Send JSON body matching ChatRequest schema {query: string}
-    const res = await fetch(`${API}/get`, {
+    const res = await fetch(`${API}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: msg })
+      body: JSON.stringify({ msg: msg })
     });
+
     hideTyping();
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || `Server error ${res.status}`);
     }
+
     const data = await res.json();
     addBot(data.response, data.request_id);
   } catch (err) {
     hideTyping();
-    showToast(err.message === 'Failed to fetch'
-      ? 'Cannot connect — is the backend running?'
-      : err.message || 'Something went wrong.');
+    showToast(
+      err.message === 'Failed to fetch'
+        ? 'Cannot connect — is the backend running?'
+        : err.message || 'Something went wrong.'
+    );
   } finally {
-    setLoading(false); inp.focus();
+    setLoading(false);
+    inp.focus();
   }
 }
 </script>

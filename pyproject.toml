@@ -38,7 +38,6 @@ dependencies = [
     "jinja2>=3.1.6",
 ]
 
-# ✅ Dev/test dependencies separate
 [project.optional-dependencies]
 dev = [
     "pytest",
@@ -48,9 +47,15 @@ dev = [
     "mypy",
     "coverage",
     "ragas",
-]   
-[tool.setuptools]
-package-dir = {"" = "src"}
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["testing"]
+pythonpath = ["."]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

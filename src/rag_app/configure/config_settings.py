@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     astra_db_api_endpoint: str
     astra_db_application_token: str
     astra_db_keyspace: str
+    port: int = 8000
 
     # ── Optional secrets (only require what you actually use) ──
     openai_api_key: str = ""
