@@ -49,7 +49,7 @@ dev = [
     "ragas",
 ]
 [tool.ruff.lint.per-file-ignores]
-"testing/*" = ["F401", "F811"]
+"testing/**" = ["F401", "F811"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -57,7 +57,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["testing"]
-pythonpath = ["."]
+pythonpath = ["src"]   # ✅ FIXED
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
