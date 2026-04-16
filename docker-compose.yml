@@ -18,23 +18,52 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 40s        # give app time for migrations/startup
     restart: unless-stopped
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   redis:
     image: redis:7-alpine
     container_name: customer_product_intelligence_redis
-    ports:
-      - "6379:6379"
+    # ports:                   # removed — only app needs Redis, not the host
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes  # persist data across restarts
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
     restart: unless-stopped
+    networks:
+      - app_network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+networks:
+  app_network:
+    driver: bridge
 
 volumes:
   redis_data:
+    driver: local
