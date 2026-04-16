@@ -48,7 +48,7 @@ dev = [
     "coverage",
     "ragas",
 ]
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "testing/*" = ["F401", "F811"]
 
 [tool.setuptools.packages.find]

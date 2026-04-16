@@ -1,5 +1,4 @@
 from typing import List
-from functools import lru_cache
 from langchain_astradb import AstraDBVectorStore
 from langchain_core.documents import Document
 from src.rag_app.configure.config_settings import get_settings
