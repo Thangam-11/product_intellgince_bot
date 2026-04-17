@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from rag_app.core_app.chain import invoke_chain
+from rag_app.core_app.chain import invoke_chain, invoke_chain_stream
 from rag_app.api_services.middleware.auth import verify_api_key
 from rag_app.api_services.middleware.rate_limit import get_limiter
 from rag_app.api_services.schmeas.chat import ChatRequest, ChatResponse
