@@ -108,23 +108,21 @@ async def invoke_chain(query: str) -> str:
     return result
 
 
-async def invoke_chain_stream(query: str) -> AsyncIterator[str]:
-    """
-    Streams the LLM response token by token.
-    Note: streaming bypasses cache — use /chat for cached responses.
-    """
+async def invoke_chain(query: str) -> str:
     if not query or not query.strip():
         raise CustomerProductIntelligenceException("Query cannot be empty")
 
-    try:
-        chain = get_chain()
-        async for chunk in chain.astream(query):
-            yield chunk
-    except CustomerProductIntelligenceException:
-        raise
-    except Exception as e:
-        raise CustomerProductIntelligenceException("Chain streaming failed", e)
+    return await _invoke_chain_internal(query)
 
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    reraise=True,
+)
+async def _invoke_chain_internal(query: str) -> str:
+    chain = get_chain()
+    return await chain.ainvoke(query)
 
 if __name__ == "__main__":
     import asyncio
