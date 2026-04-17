@@ -1,5 +1,6 @@
 import hashlib
 import redis as redis_client
+from typing import AsyncIterator
 
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -57,29 +58,25 @@ def get_chain():
     return _chain
 
 
-# 🔥 IMPORTANT: validation OUTSIDE retry
-async def invoke_chain(query: str) -> str:
-    """
-    Public entrypoint for RAG chain.
-    Handles validation before retry logic.
-    """
+# 🔥 Validation separated (fixes pytest issue)
+def _validate_query(query: str):
     if not query or not query.strip():
         raise CustomerProductIntelligenceException("Query cannot be empty")
 
+
+# ✅ Public function (with cache + retry)
+async def invoke_chain(query: str) -> str:
+    _validate_query(query)
     return await _invoke_chain_internal(query)
 
 
-# 🔥 Retry + core logic
+# 🔁 Internal retry + cache logic
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
     reraise=True,
 )
 async def _invoke_chain_internal(query: str) -> str:
-    """
-    Core RAG execution with Redis caching + retry.
-    """
-
     # ✅ Step 1 — check cache
     try:
         r = _get_redis()
@@ -112,12 +109,31 @@ async def _invoke_chain_internal(query: str) -> str:
     return result
 
 
+# 🌊 Streaming version (no cache)
+async def invoke_chain_stream(query: str) -> AsyncIterator[str]:
+    """
+    Streams response token by token.
+    (Streaming bypasses cache)
+    """
+    _validate_query(query)
+
+    try:
+        chain = get_chain()
+        async for chunk in chain.astream(query):
+            yield chunk
+    except CustomerProductIntelligenceException:
+        raise
+    except Exception as e:
+        raise CustomerProductIntelligenceException("Chain streaming failed", e)
+
+
 # 🔧 Manual test
 if __name__ == "__main__":
     import asyncio
 
     async def test():
         print("Testing RAG chain...")
+
         result = await invoke_chain("Are boAt headphones good for bass?")
         print(f"\n✅ First request (cache MISS):\n{result}")
 
