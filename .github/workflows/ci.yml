@@ -57,9 +57,9 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Run unit tests with coverage
         run: |
-          pytest tests/unit/ -v \
-            --cov=app \
-            --cov=data_ingestion \
+          pytest testing/unit_test/ -v \
+            --cov=src/rag_app \
+            --cov=src/data_ingestion \
             --cov-report=xml \
             --cov-fail-under=80
       - uses: codecov/codecov-action@v3

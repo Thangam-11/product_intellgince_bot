@@ -2,8 +2,8 @@ import pytest
 import pandas as pd
 import tempfile
 import os
-from src.data_ingestion.data_loader import load_csv          # ✅ update to your import path
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from data_ingestion.data_loader import load_csv
+from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
 
 
 # ── Helper ────────────────────────────────────────────
@@ -110,14 +110,15 @@ def test_load_csv_partial_null_rows_kept():
     """Rows missing ANY required field are dropped — this is correct behavior."""
     path = create_temp_csv(
         "product_title,rating,summary,review\n"
-        "boAt,4.5,Good,Nice sound\n"      # all fields present — kept
-        "Sony,5.0,,Amazing quality\n"     # summary null — dropped
+        "boAt,4.5,Good,Nice sound\n"       # all fields present — kept
+        "Sony,5.0,,Amazing quality\n"      # summary null — dropped
     )
     try:
         df = load_csv(path)
-        assert len(df) == 1              # ✅ only fully valid row kept
+        assert len(df) == 1               # only fully valid row kept
     finally:
         os.unlink(path)
+
 
 def test_load_csv_handles_bad_lines():
     """CSV with malformed lines must skip them gracefully."""
@@ -129,6 +130,6 @@ def test_load_csv_handles_bad_lines():
     )
     try:
         df = load_csv(path)
-        assert len(df) >= 2            # at least valid rows loaded
+        assert len(df) >= 2               # at least valid rows loaded
     finally:
         os.unlink(path)

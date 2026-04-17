@@ -1,16 +1,19 @@
 import hashlib
 import redis as redis_client
+
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+
 from tenacity import retry, stop_after_attempt, wait_exponential
+
 from rag_app.core_app.retrieval import get_retriever
 from rag_app.core_app.model_loader import get_model_loader
 from rag_app.prompts_lib.prompt import PROMPT_TEMPLATES
 from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
 from rag_app.configure.config_settings import get_settings
 from rag_app.utils.logger import get_logger
-from typing import AsyncIterator
+
 
 logger = get_logger(__name__)
 
@@ -32,18 +35,11 @@ def _cache_key(query: str) -> str:
 
 
 def _build_chain():
-    """
-    Builds the LangChain RAG chain.
-    Chain flow:
-      user query
-        → retriever fetches top-k relevant docs from AstraDB
-        → docs + query injected into prompt template
-        → LLM generates answer grounded in retrieved docs
-        → StrOutputParser extracts plain string from LLM response
-    """
+    """Builds the LangChain RAG chain."""
     retriever = get_retriever().load_retriever()
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATES["product_bot"])
     llm = get_model_loader().load_llm()
+
     return (
         {"context": retriever, "question": RunnablePassthrough()}
         | prompt
@@ -53,7 +49,7 @@ def _build_chain():
 
 
 def get_chain():
-    """Returns cached RAG chain — built once, reused for every request."""
+    """Returns cached RAG chain — built once."""
     global _chain
     if _chain is None:
         _chain = _build_chain()
@@ -61,20 +57,28 @@ def get_chain():
     return _chain
 
 
+# 🔥 IMPORTANT: validation OUTSIDE retry
+async def invoke_chain(query: str) -> str:
+    """
+    Public entrypoint for RAG chain.
+    Handles validation before retry logic.
+    """
+    if not query or not query.strip():
+        raise CustomerProductIntelligenceException("Query cannot be empty")
+
+    return await _invoke_chain_internal(query)
+
+
+# 🔥 Retry + core logic
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
     reraise=True,
 )
-async def invoke_chain(query: str) -> str:
+async def _invoke_chain_internal(query: str) -> str:
     """
-    Invokes the RAG chain with direct Redis caching.
-      1. Check Redis — return instantly if cached
-      2. Cache MISS — call LLM, store result in Redis
-      3. TTL: 1 hour — cache auto-expires
+    Core RAG execution with Redis caching + retry.
     """
-    if not query or not query.strip():
-        raise CustomerProductIntelligenceException("Query cannot be empty")
 
     # ✅ Step 1 — check cache
     try:
@@ -86,7 +90,7 @@ async def invoke_chain(query: str) -> str:
     except Exception as e:
         logger.warning("Redis unavailable for read", extra={"error": str(e)})
 
-    # ✅ Step 2 — cache miss, call LLM
+    # ✅ Step 2 — call LLM
     try:
         logger.info("Cache MISS — invoking chain", extra={"query_length": len(query)})
         chain = get_chain()
@@ -97,7 +101,7 @@ async def invoke_chain(query: str) -> str:
     except Exception as e:
         raise CustomerProductIntelligenceException("Chain invocation failed", e)
 
-    # ✅ Step 3 — store in cache
+    # ✅ Step 3 — store cache
     try:
         r = _get_redis()
         r.setex(_cache_key(query), CACHE_TTL, result)
@@ -108,22 +112,7 @@ async def invoke_chain(query: str) -> str:
     return result
 
 
-async def invoke_chain(query: str) -> str:
-    if not query or not query.strip():
-        raise CustomerProductIntelligenceException("Query cannot be empty")
-
-    return await _invoke_chain_internal(query)
-
-
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    reraise=True,
-)
-async def _invoke_chain_internal(query: str) -> str:
-    chain = get_chain()
-    return await chain.ainvoke(query)
-
+# 🔧 Manual test
 if __name__ == "__main__":
     import asyncio
 

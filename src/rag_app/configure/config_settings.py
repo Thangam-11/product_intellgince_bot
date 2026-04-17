@@ -4,10 +4,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # ── Required secrets (loaded from .env) ──
-    gemini_api_key: str = ""
-    open_router_api_key: str = ""
-    astra_db_api_endpoint: str = ""
-    astra_db_application_token: str = ""
+    gemini_api_key: str 
+    open_router_api_key: str
+    astra_db_api_endpoint: str 
+    astra_db_application_token: str 
     astra_db_keyspace: str = ""
     port: int = 8000
 

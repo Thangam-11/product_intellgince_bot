@@ -1,7 +1,7 @@
 import pytest
 import os
 from unittest.mock import patch
-from src.rag_app.configure.config_settings import get_settings
+from rag_app.configure.config_settings import get_settings
 
 REQUIRED_ENV = {
     "GEMINI_API_KEY":              "gemini-test-key",
@@ -13,10 +13,10 @@ REQUIRED_ENV = {
 
 
 def make_settings(**overrides):
-    from src.rag_app.configure.config_settings import Settings
+    from rag_app.configure.config_settings import Settings
     env = {**REQUIRED_ENV, **overrides}
     with patch.dict(os.environ, env, clear=True):
-        return Settings()
+        return Settings(_env_file=None)
 
 
 def test_settings_loads_required_fields():
@@ -52,14 +52,16 @@ def test_settings_overrides_defaults():
 def test_settings_missing_required_field_raises():
     """Missing required field must raise ValidationError."""
     from pydantic import ValidationError
+    from rag_app.configure.config_settings import Settings
+
     incomplete = {k: v for k, v in REQUIRED_ENV.items() if k != "GEMINI_API_KEY"}
     with patch.dict(os.environ, incomplete, clear=True):
         with pytest.raises(ValidationError):
-            from src.rag_app.configure.config_settings import Settings
-            Settings(_env_file=None)  # ✅ skip .env file
+            Settings(_env_file=None)  # bypass .env so missing key is truly absent
+
 
 def test_settings_lru_cache_returns_same_instance():
-    from src.rag_app.configure.config_settings import get_settings
+    from rag_app.configure.config_settings import get_settings
     get_settings.cache_clear()
     s1 = get_settings()
     s2 = get_settings()
