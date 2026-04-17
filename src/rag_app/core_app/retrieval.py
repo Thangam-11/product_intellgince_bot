@@ -1,10 +1,10 @@
 from typing import List
 from langchain_astradb import AstraDBVectorStore
 from langchain_core.documents import Document
-from src.rag_app.configure.config_settings import get_settings
-from src.rag_app.core_app.model_loader import get_model_loader
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
-from src.rag_app.utils.logger import get_logger
+from rag_app.configure.config_settings import get_settings
+from rag_app.core_app.model_loader import get_model_loader
+from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -63,3 +63,8 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = ["e2e: marks tests as end-to-end (deselect with '-m not e2e')"]
 addopts = "-m 'not e2e'"
+
+[tool.mypy]                          # ← add this block
+mypy_path = "src"
+explicit_package_bases = true
+ignore_missing_imports = true

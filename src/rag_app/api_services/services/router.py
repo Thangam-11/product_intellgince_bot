@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.rag_app.api_services.services import chatbot, health
+from rag_app.api_services.services import chatbot, health
 
 router = APIRouter()
 router.include_router(health.router)

@@ -4,12 +4,12 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from tenacity import retry, stop_after_attempt, wait_exponential
-from src.rag_app.core_app.retrieval import get_retriever
-from src.rag_app.core_app.model_loader import get_model_loader
-from src.rag_app.prompts_lib.prompt import PROMPT_TEMPLATES
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
-from src.rag_app.configure.config_settings import get_settings
-from src.rag_app.utils.logger import get_logger
+from rag_app.core_app.retrieval import get_retriever
+from rag_app.core_app.model_loader import get_model_loader
+from rag_app.prompts_lib.prompt import PROMPT_TEMPLATES
+from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from rag_app.configure.config_settings import get_settings
+from rag_app.utils.logger import get_logger
 from typing import AsyncIterator
 
 logger = get_logger(__name__)

@@ -1,6 +1,6 @@
 import pandas as pd
-from src.rag_app.utils.logger import get_logger
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from rag_app.utils.logger import get_logger
+from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
 
 logger = get_logger(__name__)
 

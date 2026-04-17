@@ -2,7 +2,7 @@ import hashlib
 import pandas as pd
 from typing import List, Tuple
 from langchain_core.documents import Document
-from src.rag_app.utils.logger import get_logger
+from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

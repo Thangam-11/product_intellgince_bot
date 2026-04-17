@@ -1,17 +1,18 @@
 from functools import lru_cache
+from pydantic import SecretStr
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from src.rag_app.configure.config_settings import get_settings, Settings
-from src.rag_app.utils.logger import get_logger
+from rag_app.configure.config_settings import get_settings, Settings
+from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class ModelLoader:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self._embeddings = None
-        self._llm = None
+        self._embeddings: GoogleGenerativeAIEmbeddings | None = None
+        self._llm: ChatOpenAI | None = None
 
     def load_embeddings(self) -> GoogleGenerativeAIEmbeddings:
         if not self._embeddings:
@@ -21,7 +22,7 @@ class ModelLoader:
             )
             self._embeddings = GoogleGenerativeAIEmbeddings(
                 model=self.settings.embedding_model,
-                google_api_key=self.settings.gemini_api_key,
+                api_key=SecretStr(self.settings.gemini_api_key),  # ← correct kwarg
             )
         return self._embeddings
 
@@ -35,10 +36,10 @@ class ModelLoader:
             )
             self._llm = ChatOpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key=self.settings.open_router_api_key,
+                api_key=SecretStr(self.settings.open_router_api_key),
                 model=self.settings.llm_model,
                 temperature=0.7,
-                request_timeout=30,
+                timeout=30,
                 max_retries=2,
             )
         return self._llm
@@ -51,11 +52,9 @@ def get_model_loader() -> ModelLoader:
 
 if __name__ == "__main__":
     loader = get_model_loader()
-
     print("Testing embeddings...")
     embeddings = loader.load_embeddings()
     print(f"✅ Embeddings loaded: {type(embeddings).__name__}")
-
     print("Testing LLM...")
     llm = loader.load_llm()
     print(f"✅ LLM loaded: {type(llm).__name__}")

@@ -16,7 +16,7 @@ class CustomerProductIntelligenceException(Exception):
       - Shows file + line number in error messages
     """
 
-    def __init__(self, message: str, original: Exception = None):
+    def __init__(self, message: str, original: Exception | None = None):
         super().__init__(message)
         self.original = original
         # Capture traceback at raise time, not at __init__ time

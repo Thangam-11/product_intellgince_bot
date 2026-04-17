@@ -7,14 +7,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
-from src.rag_app.configure.config_settings import get_settings
-from src.rag_app.api_services.services.router import router
-from src.rag_app.api_services.middleware.logging_middleware import RequestLoggingMiddleware
-from src.rag_app.api_services.middleware.rate_limit import get_limiter
-from src.rag_app.logger_exceptions.handlers import register_exception_handlers
-from src.rag_app.cache_layer.redis_cache import setup_cache
-from src.rag_app.core_app.model_loader import get_model_loader
-from src.rag_app.utils.logger import get_logger
+from rag_app.configure.config_settings import get_settings
+from rag_app.api_services.services.router import router
+from rag_app.api_services.middleware.logging_middleware import RequestLoggingMiddleware
+from rag_app.api_services.middleware.rate_limit import get_limiter
+from rag_app.logger_exceptions.handlers import register_exception_handlers
+from rag_app.cache_layer.redis_cache import setup_cache
+from rag_app.core_app.model_loader import get_model_loader
+from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

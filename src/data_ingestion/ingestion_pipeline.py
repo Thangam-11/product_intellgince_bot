@@ -7,11 +7,11 @@ This file just orchestrates loader → transformer → vector_store.
 Each step is in its own module for independent testing.
 """
 import os
-from src.rag_app.utils.logger import get_logger
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
-from src.data_ingestion.data_loader import load_csv
-from src.data_ingestion.data_transform import transform
-from src.data_ingestion.vector_store import store_documents
+from rag_app.utils.logger import get_logger
+from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from data_ingestion.data_loader import load_csv
+from data_ingestion.data_transform import transform
+from data_ingestion.vector_store import store_documents
 
 logger = get_logger(__name__)
 

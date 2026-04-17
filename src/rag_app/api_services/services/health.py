@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from src.rag_app.core_app.retrieval import get_retriever
-from src.rag_app.configure.config_settings import get_settings
-from src.rag_app.utils.logger import get_logger
+from rag_app.core_app.retrieval import get_retriever
+from rag_app.configure.config_settings import get_settings
+from rag_app.utils.logger import get_logger
 import time
 
 router = APIRouter(tags=["Health"])

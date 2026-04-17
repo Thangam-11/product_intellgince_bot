@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from src.rag_app.core_app.chain import invoke_chain, invoke_chain_stream
-from src.rag_app.api_services.middleware.auth import verify_api_key
-from src.rag_app.api_services.middleware.rate_limit import get_limiter
-from src.rag_app.api_services.schmeas.chat import ChatRequest, ChatResponse
-from src.rag_app.utils.logger import get_logger
+from rag_app.core_app.chain import invoke_chain, invoke_chain_stream
+from rag_app.api_services.middleware.auth import verify_api_key
+from rag_app.api_services.middleware.rate_limit import get_limiter
+from rag_app.api_services.schmeas.chat import ChatRequest, ChatResponse
+from rag_app.utils.logger import get_logger
 
 router = APIRouter(tags=["Chat"])
 logger = get_logger(__name__)

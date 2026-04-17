@@ -5,8 +5,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
-from src.rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
-from src.rag_app.utils.logger import get_logger
+from rag_app.logger_exceptions.exception import CustomerProductIntelligenceException
+from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
