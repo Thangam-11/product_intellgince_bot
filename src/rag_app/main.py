@@ -18,9 +18,8 @@ from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-
-BASE_DIR = Path(__file__).resolve().parent       # → src/rag_app/
-ROOT_DIR = BASE_DIR.parent.parent                # → customer_product_intelligence-bot/
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent.parent
 
 templates = Jinja2Templates(directory=ROOT_DIR / "templates")
 
@@ -32,27 +31,23 @@ async def lifespan(app: FastAPI):
         "Starting up",
         extra={
             "environment": settings.environment,
-            "host": "0.0.0.0", # nosec B104
+            "host": "0.0.0.0",  # nosec B104
             "port": settings.port,
         },
     )
     try:
         embeddings = get_model_loader().load_embeddings()
+        cache_ok = setup_cache(embeddings)
+        logger.info("Cache setup", extra={"cache_enabled": cache_ok})
     except Exception as e:
-        logger.critical("Failed to load embeddings — aborting startup", exc_info=e)
-        raise
-
-    cache_ok = setup_cache(embeddings)
-    logger.info("Cache setup", extra={"cache_enabled": cache_ok})
+        logger.warning("Failed to load embeddings — continuing without cache", exc_info=e)
 
     yield
-
     logger.info("Shutting down gracefully")
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-
     app = FastAPI(
         title="Customer Product Intelligence Bot",
         description="AI-powered e-commerce product intelligence using RAG",
@@ -61,10 +56,7 @@ def create_app() -> FastAPI:
         redoc_url=None,
         lifespan=lifespan,
     )
-
-    # Store settings on app state so lifespan and routes can access them
     app.state.settings = settings
-
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -76,20 +68,16 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
-
     limiter = get_limiter()
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
     register_exception_handlers(app)
     app.include_router(router)
-
     app.mount(
         "/static",
         StaticFiles(directory=ROOT_DIR / "static"),
         name="static",
     )
-
     return app
 
 
@@ -105,9 +93,8 @@ if __name__ == "__main__":
     _settings = get_settings()
     uvicorn.run(
         "rag_app.main:app",
-        host="0.0.0.0",   # nosec B104
+        host="0.0.0.0",  # nosec B104
         port=_settings.port,
         reload=_settings.environment == "development",
-        
         workers=1 if _settings.environment == "development" else 4,
     )
