@@ -104,8 +104,8 @@ async def serve_frontend(request: Request):
 if __name__ == "__main__":
     _settings = get_settings()
     uvicorn.run(
-        "src.rag_app.main:app",
-        host="0.0.0.0",
+        "rag_app.main:app",
+        host="0.0.0.0",   # nosec B104
         port=_settings.port,
         reload=_settings.environment == "development",
         
