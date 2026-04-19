@@ -18,6 +18,7 @@ from rag_app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 BASE_DIR = Path(__file__).resolve().parent       # → src/rag_app/
 ROOT_DIR = BASE_DIR.parent.parent                # → customer_product_intelligence-bot/
 
@@ -31,7 +32,7 @@ async def lifespan(app: FastAPI):
         "Starting up",
         extra={
             "environment": settings.environment,
-            "host": "0.0.0.0",
+            "host": "0.0.0.0", # nosec B104
             "port": settings.port,
         },
     )

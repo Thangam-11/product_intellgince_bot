@@ -32,7 +32,7 @@ def _get_redis():
 
 def _cache_key(query: str) -> str:
     """Deterministic cache key from query."""
-    return f"rag:response:{hashlib.md5(query.strip().lower().encode()).hexdigest()}"
+    return f"rag:response:{hashlib.sha256(query.strip().lower().encode()).hexdigest()}"
 
 
 def _build_chain():
