@@ -21,7 +21,10 @@ def test_client():
          patch("redis.from_url"):
         from fastapi.testclient import TestClient
         from rag_app.main import app
-        with TestClient(app) as client:
+        with TestClient(
+            app,
+            headers={"X-API-Key": "test-api-key"}  # ← ADD THIS
+        ) as client:
             yield client
 
 
@@ -65,7 +68,6 @@ def test_chat_response_contains_request_id(client_with_mock_chain):
     body = response.json()
     assert "request_id" in body
     assert isinstance(body["request_id"], str)
-
 
 
 def test_chat_returns_422_for_empty_message(client_with_mock_chain):
