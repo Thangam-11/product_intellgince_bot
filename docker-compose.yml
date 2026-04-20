@@ -33,7 +33,7 @@ services:
           memory: 256M
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:latest
     container_name: customer_product_intelligence_redis
     # ports:                   # removed — only app needs Redis, not the host
     #   - "6379:6379"
