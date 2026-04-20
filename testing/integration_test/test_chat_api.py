@@ -14,13 +14,13 @@ def mock_chain_response():
 @pytest.fixture
 def test_client():
     """FastAPI TestClient with all external services mocked."""
-    with patch("src.rag_app.core_app.retrieval.AstraDBVectorStore"), \
-         patch("src.rag_app.core_app.model_loader.GoogleGenerativeAIEmbeddings"), \
-         patch("src.rag_app.core_app.model_loader.ChatOpenAI"), \
-         patch("src.rag_app.cache_layer.redis_cache.setup_cache", return_value=True), \
+    with patch("rag_app.core_app.retrieval.AstraDBVectorStore"), \
+         patch("rag_app.core_app.model_loader.GoogleGenerativeAIEmbeddings"), \
+         patch("rag_app.core_app.model_loader.ChatOpenAI"), \
+         patch("rag_app.cache_layer.redis_cache.setup_cache", return_value=True), \
          patch("redis.from_url"):
         from fastapi.testclient import TestClient
-        from src.rag_app.main import app
+        from rag_app.main import app
         with TestClient(app) as client:
             yield client
 
@@ -29,7 +29,7 @@ def test_client():
 def client_with_mock_chain(test_client, mock_chain_response):
     """TestClient with chain mocked to return fake response."""
     with patch(
-        "src.rag_app.api_services.services.chatbot.invoke_chain",
+        "rag_app.api_services.services.chatbot.invoke_chain",
         new=AsyncMock(return_value=mock_chain_response),
     ):
         yield test_client

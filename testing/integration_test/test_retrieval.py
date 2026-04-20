@@ -23,12 +23,12 @@ MOCK_DOCS = [
 @pytest.fixture
 def mock_retriever():
     """Mock retriever that returns fake documents."""
-    with patch("src.rag_app.core_app.retrieval.AstraDBVectorStore") as mock_store:
+    with patch("rag_app.core_app.retrieval.AstraDBVectorStore") as mock_store:
         mock_vstore = MagicMock()
         mock_vstore.as_retriever.return_value.invoke.return_value = MOCK_DOCS
         mock_store.return_value = mock_vstore
 
-        from src.rag_app.core_app.retrieval import Retriever
+        from rag_app.core_app.retrieval import Retriever
         retriever = Retriever()
         retriever._vstore = mock_vstore
         yield retriever
@@ -65,8 +65,8 @@ def test_retriever_documents_have_metadata(mock_retriever):
 
 def test_check_connection_returns_true_when_connected():
     """check_connection must return True when AstraDB is reachable."""
-    with patch("src.rag_app.core_app.retrieval.AstraDBVectorStore"):
-        from src.rag_app.core_app.retrieval import Retriever
+    with patch("rag_app.core_app.retrieval.AstraDBVectorStore"):
+        from rag_app.core_app.retrieval import Retriever
         retriever = Retriever()
         retriever._vstore = MagicMock()  # mock connected vstore
         assert retriever.check_connection() is True
@@ -74,7 +74,7 @@ def test_check_connection_returns_true_when_connected():
 
 def test_check_connection_returns_false_when_failed():
     """check_connection must return False when AstraDB is unreachable."""
-    from src.rag_app.core_app.retrieval import Retriever
+    from rag_app.core_app.retrieval import Retriever
     retriever = Retriever()
     retriever._vstore = None
     with patch.object(retriever, "_get_vstore", side_effect=Exception("Connection failed")):
