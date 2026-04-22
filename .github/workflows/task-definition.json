@@ -1,0 +1,73 @@
+{
+  "family": "product-intelligence-staging",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::630889618892:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "product-intelligence-app",
+      "image": "630889618892.dkr.ecr.us-east-1.amazonaws.com/product_intellgince_bot:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {"name": "ENVIRONMENT", "value": "production"},
+        {"name": "REDIS_URL", "value": "redis://localhost:6379"}
+      ],
+      "secrets": [
+        {
+          "name": "GEMINI_API_KEY",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/GEMINI_API_KEY"
+        },
+        {
+          "name": "OPEN_ROUTER_API_KEY",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/OPEN_ROUTER_API_KEY"
+        },
+        {
+          "name": "ASTRA_DB_API_ENDPOINT",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/ASTRA_DB_API_ENDPOINT"
+        },
+        {
+          "name": "ASTRA_DB_APPLICATION_TOKEN",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/ASTRA_DB_APPLICATION_TOKEN"
+        },
+        {
+          "name": "ASTRA_DB_KEYSPACE",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/ASTRA_DB_KEYSPACE"
+        },
+        {
+          "name": "ASTRA_DB_COLLECTION",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/ASTRA_DB_COLLECTION"
+        },
+        {
+          "name": "API_KEY",
+          "valueFrom": "arn:aws:ssm:us-east-1:630889618892:parameter/API_KEY"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/product-intelligence-bot",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8000/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

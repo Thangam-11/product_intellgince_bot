@@ -8,8 +8,9 @@ class Settings(BaseSettings):
     open_router_api_key: str
     astra_db_api_endpoint: str 
     astra_db_application_token: str 
-    astra_db_keyspace: str = ""
+    astra_db_keyspace: str 
     port: int = 8000
+    
 
     # ── Optional secrets ──
     openai_api_key: str = ""

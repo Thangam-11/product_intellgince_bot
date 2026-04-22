@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 15
     services:
       redis:
-        image: redis:7-alpine
+        image: redis/redis-stack-server:latest
         ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"
@@ -48,6 +48,7 @@ jobs:
       ASTRA_DB_COLLECTION: fake_collection
       REDIS_URL: redis://localhost:6379
       ENVIRONMENT: testing
+      API_KEY: test-api-key
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -74,7 +75,7 @@ jobs:
     timeout-minutes: 15
     services:
       redis:
-        image: redis:7-alpine
+        image: redis/redis-stack-server:latest
         ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"
@@ -90,6 +91,7 @@ jobs:
       ASTRA_DB_COLLECTION: fake_collection
       REDIS_URL: redis://localhost:6379
       ENVIRONMENT: testing
+      API_KEY: test-api-key
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -100,7 +102,7 @@ jobs:
       - run: pytest testing/integration_test/ -v
 
   docker-build:
-    name: Docker Build & Smoke Tes
+    name: Docker Build & Smoke Test
     runs-on: ubuntu-latest
     needs: lint
     timeout-minutes: 30
@@ -145,6 +147,7 @@ jobs:
           ASTRA_DB_COLLECTION=fake_collection
           REDIS_URL=redis://redis:6379
           ENVIRONMENT=testing
+          API_KEY=test-api-key
           EOF
 
       - name: Start stack via Docker Compose
@@ -198,4 +201,3 @@ jobs:
           path: ./
           base: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
           head: ${{ github.event.pull_request.head.sha || 'HEAD' }}
-
