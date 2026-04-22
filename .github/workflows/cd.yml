@@ -10,7 +10,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: product_intelligence_bot 
   ECS_CLUSTER: product_cluster
-  ECS_SERVICE: product-intelligence-task
+  ECS_SERVICE: product-service
   CONTAINER_NAME: product-intelligence-app
 
 jobs:
