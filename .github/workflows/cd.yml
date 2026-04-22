@@ -8,9 +8,9 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: product_intelligence_bot
-  ECS_CLUSTER: product_intellgince_bot_cluster
-  ECS_SERVICE: product-intelligence-staging
+  ECR_REPOSITORY: product_intelligence_bot 
+  ECS_CLUSTER: product_cluster
+  ECS_SERVICE: product-intelligence-task
   CONTAINER_NAME: product-intelligence-app
 
 jobs:
@@ -103,3 +103,4 @@ jobs:
             --output text)
           curl -f http://$IP:8000/health || exit 1
           echo "✅ Health check passed!"
+
