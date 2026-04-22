@@ -12,6 +12,9 @@ env:
   ECS_CLUSTER: product_cluster
   ECS_SERVICE: product-service
   CONTAINER_NAME: product-intelligence-app
+  TASK_DEFINITION: product-intelligence-task
+  SUBNET_ID: subnet-0c2b441441cd36d42
+  SECURITY_GROUP_ID: sg-02c423f0c70eb33ef
 
 jobs:
   deploy:
@@ -47,20 +50,44 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Deploy to ECS (force new deployment)
+      - name: Create or update ECS service
         run: |
-          aws ecs update-service \
+          # Check if service exists
+          SERVICE_STATUS=$(aws ecs describe-services \
             --cluster ${{ env.ECS_CLUSTER }} \
-            --service ${{ env.ECS_SERVICE }} \
-            --force-new-deployment \
-            --region ${{ env.AWS_REGION }}
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }} \
+            --query "services[0].status" \
+            --output text)
+
+          if [ "$SERVICE_STATUS" == "ACTIVE" ]; then
+            echo "✅ Service exists — forcing new deployment..."
+            aws ecs update-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service ${{ env.ECS_SERVICE }} \
+              --task-definition ${{ env.TASK_DEFINITION }} \
+              --force-new-deployment \
+              --region ${{ env.AWS_REGION }}
+          else
+            echo "🚀 Service not found — creating new service..."
+            aws ecs create-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service-name ${{ env.ECS_SERVICE }} \
+              --task-definition ${{ env.TASK_DEFINITION }} \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[${{ env.SUBNET_ID }}],securityGroups=[${{ env.SECURITY_GROUP_ID }}],assignPublicIp=ENABLED}" \
+              --region ${{ env.AWS_REGION }}
+          fi
 
       - name: Wait for service stability
         run: |
+          echo "⏳ Waiting for service to stabilize..."
           aws ecs wait services-stable \
             --cluster ${{ env.ECS_CLUSTER }} \
             --services ${{ env.ECS_SERVICE }} \
             --region ${{ env.AWS_REGION }}
+          echo "✅ Service is stable!"
 
       - name: Get public IP
         id: get-ip
@@ -87,5 +114,7 @@ jobs:
 
       - name: Smoke test deployment
         run: |
+          echo "🔍 Running smoke test..."
+          sleep 10
           curl -f http://${{ steps.get-ip.outputs.ip }}:8000/health || exit 1
           echo "✅ Health check passed!"
