@@ -1,3 +1,4 @@
+from astrapy import settings
 from fastapi import Security, HTTPException, Request
 from fastapi.security import APIKeyHeader
 from rag_app.configure.config_settings import get_settings
@@ -31,8 +32,9 @@ async def verify_api_key(
     settings = get_settings()
 
     # Skip auth in local development
-    if settings.environment == "development":
-        return
+   # Skip auth in development and testing
+    if settings.environment in ["development", "testing"]:
+       return 
 
     if not api_key:
         logger.warning(
