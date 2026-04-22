@@ -1,0 +1,233 @@
+git compose 
+
+name: CI Pipeline
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.10"
+  DOCKER_BUILDKIT: "1"
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Ruff lint
+        run: ruff check . --output-format=github
+      - name: Mypy type check
+        run: mypy src/ --ignore-missing-imports
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+    env:
+      GEMINI_API_KEY: sk-fake-for-ci
+      OPEN_ROUTER_API_KEY: sk-fake-for-ci
+      ASTRA_DB_API_ENDPOINT: https://fake.endpoint
+      ASTRA_DB_APPLICATION_TOKEN: fake-token
+      ASTRA_DB_KEYSPACE: fake_ks
+      ASTRA_DB_COLLECTION: fake_collection
+      REDIS_URL: redis://localhost:6379
+      ENVIRONMENT: testing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run unit tests with coverage
+        run: |
+          pytest testing/unit_test/ -v \
+            --cov=src/rag_app \
+            --cov=src/data_ingestion \
+            --cov-report=xml \
+            --cov-fail-under=0
+      - uses: codecov/codecov-action@v3
+        with:
+          file: coverage.xml
+          fail_ci_if_error: false
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+    env:
+      GEMINI_API_KEY: sk-fake-for-ci
+      OPEN_ROUTER_API_KEY: sk-fake-for-ci
+      ASTRA_DB_API_ENDPOINT: https://fake.endpoint
+      ASTRA_DB_APPLICATION_TOKEN: fake-token
+      ASTRA_DB_KEYSPACE: fake_ks
+      ASTRA_DB_COLLECTION: fake_collection
+      REDIS_URL: redis://localhost:6379
+      ENVIRONMENT: testing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pytest testing/integration_test/ -v
+
+  docker-build:
+    name: Docker Build & Smoke Tes
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build production image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: production
+          push: false
+          load: true
+          tags: product_intelligence_bot:ci
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          GEMINI_API_KEY=sk-fake-for-ci
+          OPEN_ROUTER_API_KEY=sk-fake-for-ci
+          ASTRA_DB_API_ENDPOINT=https://fake.endpoint
+          ASTRA_DB_APPLICATION_TOKEN=fake-token
+          ASTRA_DB_KEYSPACE=fake_ks
+          ASTRA_DB_COLLECTION=fake_collection
+          REDIS_URL=redis://redis:6379
+          ENVIRONMENT=testing
+          EOF
+
+      - name: Start stack via Docker Compose
+        run: docker compose up -d
+
+      - name: Wait for app to be healthy
+        run: |
+          echo "Waiting for app healthcheck..."
+          for i in $(seq 1 20); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' customer_product_intelligence_app 2>/dev/null || echo "missing")
+            echo "Attempt $i: $STATUS"
+            if [ "$STATUS" = "healthy" ]; then
+              echo "App is healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "App did not become healthy in time"
+          docker compose logs
+          exit 1
+
+      - name: Smoke test /health endpoint
+        run: curl -f http://localhost:8000/health
+
+      - name: Smoke test Redis connectivity
+        run: docker exec customer_product_intelligence_redis redis-cli ping
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Bandit SAST scan
+        run: bandit -r src/ -ll -ii
+      - name: Check for leaked secrets
+        uses: trufflesecurity/trufflehog@v3.88.0
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
+          head: ${{ github.event.pull_request.head.sha || 'HEAD' }}
+
+vpc-024cb41f15497be7f
+subnet-0c2b441441cd36d42
+sg-02c423f0c70eb33ef
+630889618892
+vpc-024cb41f15497be7f
+subnet-0c2b441441cd36d42
+sg-02c423f0c70eb33ef
+
+# again aupgter the cicd pipelin e
+
+
+        "name": "subnetId",
+        "value": "subnet-0c2b441441cd36d42"
+    },
+    {
+        "name": "networkInterfaceId",
+        "value": "eni-0618e1c23e00b9021"
+    },
+    {
+        "name": "macAddress",
+        "value": "0e:d1:b8:f8:e5:03"
+    },
+    {
+        "name": "privateDnsName",
+        "value": "ip-172-31-35-137.ec2.internal"
+    },
+    {
+        "name": "privateIPv4Address",
+        "value": "172.31.35.137"
+-- More  --
