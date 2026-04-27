@@ -209,7 +209,7 @@ vpc-024cb41f15497be7f
 subnet-0c2b441441cd36d42
 sg-02c423f0c70eb33ef
 
-# again aupgter the cicd pipelin e
+# again aupgter the cicd pipelin e cd ssm updated paramets updated
 
 
         "name": "subnetId",
@@ -231,3 +231,6 @@ sg-02c423f0c70eb33ef
         "name": "privateIPv4Address",
         "value": "172.31.35.137"
 -- More  --
+
+# update readme file
+
