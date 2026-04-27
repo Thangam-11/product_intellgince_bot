@@ -209,7 +209,7 @@ vpc-024cb41f15497be7f
 subnet-0c2b441441cd36d42
 sg-02c423f0c70eb33ef
 
-# again aupgter the cicd pipelin e cd ssm updated paramets updated
+# again aupgter the cicd pipelin e cd ssm updated paramets updated upared .env file and some changed
 
 
         "name": "subnetId",
