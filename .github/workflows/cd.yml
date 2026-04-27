@@ -9,7 +9,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: product_intelligence_bot
-  ECS_CLUSTER: product_cluster
+  ECS_CLUSTER: product_cluster_new
   ECS_SERVICE: product-service
   CONTAINER_NAME: product-intelligence-app
   TASK_FAMILY: product-intelligence-task

@@ -3,14 +3,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # ── Required secrets (loaded from .env) ──
-    gemini_api_key: str 
+    # ── Required secrets ──
+    gemini_api_key: str
     open_router_api_key: str
-    astra_db_api_endpoint: str 
-    astra_db_application_token: str 
-    astra_db_keyspace: str 
+    astra_db_api_endpoint: str
+    astra_db_application_token: str
+    astra_db_keyspace: str
     port: int = 8000
-    
 
     # ── Optional secrets ──
     openai_api_key: str = ""
@@ -31,6 +30,12 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    # ✅ ADD THIS BLOCK (VERY IMPORTANT)
+    def model_post_init(self, __context):
+        self.astra_db_application_token = self.astra_db_application_token.strip()
+        self.gemini_api_key = self.gemini_api_key.strip()
+        self.open_router_api_key = self.open_router_api_key.strip()
 
 
 @lru_cache()
