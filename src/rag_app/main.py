@@ -52,7 +52,7 @@ def create_app() -> FastAPI:
         title="Customer Product Intelligence Bot",
         description="AI-powered e-commerce product intelligence using RAG",
         version="1.0.0",
-        docs_url="/docs" if settings.environment != "production" else None,
+        docs_url="/docs",
         redoc_url=None,
         lifespan=lifespan,
     )
