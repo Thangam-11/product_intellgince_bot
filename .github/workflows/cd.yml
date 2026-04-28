@@ -9,7 +9,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: product_intelligence_bot
-  ECS_CLUSTER: product_cluster_new
+  ECS_CLUSTER: product_cluster_new_version
   ECS_SERVICE: product-service
   CONTAINER_NAME: product-intelligence-app
   TASK_FAMILY: product-intelligence-task
@@ -78,12 +78,18 @@ jobs:
               \"portMappings\": [{\"containerPort\": 8000, \"protocol\": \"tcp\"}],
               \"essential\": true,
               \"secrets\": [
-                {\"name\": \"gemini_api_key\", \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/GEMINI_API_KEY\"},
-                {\"name\": \"open_router_api_key\", \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/OPEN_ROUTER_API_KEY\"},
-                {\"name\": \"astra_db_api_endpoint\", \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/ASTRA_DB_API_ENDPOINT\"},
+                {\"name\": \"gemini_api_key\",             \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/GEMINI_API_KEY\"},
+                {\"name\": \"open_router_api_key\",        \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/OPEN_ROUTER_API_KEY\"},
+                {\"name\": \"astra_db_api_endpoint\",      \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/ASTRA_DB_API_ENDPOINT\"},
                 {\"name\": \"astra_db_application_token\", \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/ASTRA_DB_APPLICATION_TOKEN\"},
-                {\"name\": \"astra_db_keyspace\", \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/ASTRA_DB_COLLECTION\"},
-                {\"name\": \"API_KEY\", \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/API_KEY\"}
+                {\"name\": \"astra_db_keyspace\",          \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/ASTRA_DB_KEYSPACE\"},
+                {\"name\": \"astra_db_collection\",        \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/ASTRA_DB_COLLECTION\"},
+                {\"name\": \"api_key\",                    \"valueFrom\": \"arn:aws:ssm:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:parameter/API_KEY\"}
+              ],
+              \"environment\": [
+                {\"name\": \"redis_url\",   \"value\": \"redis://localhost:6379\"},
+                {\"name\": \"environment\", \"value\": \"production\"},
+                {\"name\": \"log_level\",   \"value\": \"INFO\"}
               ],
               \"logConfiguration\": {
                 \"logDriver\": \"awslogs\",
