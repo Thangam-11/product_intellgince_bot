@@ -1,236 +1,299 @@
-git compose 
+# 🤖 Customer Product Intelligence Bot
 
-name: CI Pipeline
-on:
-  pull_request:
-    branches: [main, develop]
-  push:
-    branches: [main, develop]
+> An AI-powered e-commerce product intelligence system using RAG (Retrieval-Augmented Generation) — fully automated from code push to production on AWS.
 
-env:
-  PYTHON_VERSION: "3.10"
-  DOCKER_BUILDKIT: "1"
+![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi)
+![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)
+![AWS ECS](https://img.shields.io/badge/AWS-ECS%20Fargate-orange?logo=amazon-aws)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-black?logo=github-actions)
 
-jobs:
-  lint:
-    name: Lint & Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - name: Ruff lint
-        run: ruff check . --output-format=github
-      - name: Mypy type check
-        run: mypy src/ --ignore-missing-imports
+---
 
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    needs: lint
-    timeout-minutes: 15
-    services:
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
-    env:
-      GEMINI_API_KEY: sk-fake-for-ci
-      OPEN_ROUTER_API_KEY: sk-fake-for-ci
-      ASTRA_DB_API_ENDPOINT: https://fake.endpoint
-      ASTRA_DB_APPLICATION_TOKEN: fake-token
-      ASTRA_DB_KEYSPACE: fake_ks
-      ASTRA_DB_COLLECTION: fake_collection
-      REDIS_URL: redis://localhost:6379
-      ENVIRONMENT: testing
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - run: pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run unit tests with coverage
-        run: |
-          pytest testing/unit_test/ -v \
-            --cov=src/rag_app \
-            --cov=src/data_ingestion \
-            --cov-report=xml \
-            --cov-fail-under=0
-      - uses: codecov/codecov-action@v3
-        with:
-          file: coverage.xml
-          fail_ci_if_error: false
+## 📖 About This Project
 
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: unit-tests
-    timeout-minutes: 15
-    services:
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
-    env:
-      GEMINI_API_KEY: sk-fake-for-ci
-      OPEN_ROUTER_API_KEY: sk-fake-for-ci
-      ASTRA_DB_API_ENDPOINT: https://fake.endpoint
-      ASTRA_DB_APPLICATION_TOKEN: fake-token
-      ASTRA_DB_KEYSPACE: fake_ks
-      ASTRA_DB_COLLECTION: fake_collection
-      REDIS_URL: redis://localhost:6379
-      ENVIRONMENT: testing
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: pytest testing/integration_test/ -v
+The **Customer Product Intelligence Bot** is a production-grade RAG system that answers product questions based on real customer reviews — no hallucinations, just grounded answers from actual data.
 
-  docker-build:
-    name: Docker Build & Smoke Tes
-    runs-on: ubuntu-latest
-    needs: lint
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
+Ask questions like:
+- *"Are boAt headphones good for bass?"*
+- *"Compare boAt BassHeads 100 vs 225"*
+- *"Best budget headphones under ₹500?"*
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+The bot retrieves relevant reviews from a vector database and generates accurate, context-aware answers using a Large Language Model.
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('Dockerfile') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+> 🎯 **Key Difference:** Answers are grounded in real customer reviews stored in AstraDB — not hallucinated responses.
 
-      - name: Build production image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: production
-          push: false
-          load: true
-          tags: product_intelligence_bot:ci
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+---
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+## 🎓 What You'll Learn
 
-      - name: Create .env file
-        run: |
-          cat > .env << EOF
-          GEMINI_API_KEY=sk-fake-for-ci
-          OPEN_ROUTER_API_KEY=sk-fake-for-ci
-          ASTRA_DB_API_ENDPOINT=https://fake.endpoint
-          ASTRA_DB_APPLICATION_TOKEN=fake-token
-          ASTRA_DB_KEYSPACE=fake_ks
-          ASTRA_DB_COLLECTION=fake_collection
-          REDIS_URL=redis://redis:6379
-          ENVIRONMENT=testing
-          EOF
+- Building a **production RAG pipeline** from scratch
+- **FastAPI** backend with async support and middleware
+- **Vector database** integration with AstraDB
+- **AWS ECS Fargate** deployment with zero manual steps
+- **CI/CD pipeline** with GitHub Actions
+- **Secrets management** with AWS SSM Parameter Store
+- **Docker** containerization and ECR image management
 
-      - name: Start stack via Docker Compose
-        run: docker compose up -d
+---
 
-      - name: Wait for app to be healthy
-        run: |
-          echo "Waiting for app healthcheck..."
-          for i in $(seq 1 20); do
-            STATUS=$(docker inspect --format='{{.State.Health.Status}}' customer_product_intelligence_app 2>/dev/null || echo "missing")
-            echo "Attempt $i: $STATUS"
-            if [ "$STATUS" = "healthy" ]; then
-              echo "App is healthy"
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "App did not become healthy in time"
-          docker compose logs
-          exit 1
+## 🏗️ System Architecture
 
-      - name: Smoke test /health endpoint
-        run: curl -f http://localhost:8000/health
+```
+User Request
+     │
+     ▼
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  FastAPI    │────▶│  RAG Chain   │────▶│   AstraDB       │
+│  Backend    │     │              │     │  (Vector Store) │
+└─────────────┘     └──────────────┘     └─────────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │  OpenRouter  │
+                    │  LLaMA 3 8B  │
+                    └──────────────┘
+```
 
-      - name: Smoke test Redis connectivity
-        run: docker exec customer_product_intelligence_redis redis-cli ping
+### CI/CD Pipeline
 
-      - name: Dump logs on failure
-        if: failure()
-        run: docker compose logs --tail=100
+```
+Push to main
+     │
+     ▼
+┌──────────┐    ┌───────────┐    ┌──────────────┐    ┌─────────────┐
+│ CI Tests │───▶│ Build     │───▶│ Push to ECR  │───▶│ Deploy to   │
+│ (pytest) │    │ Docker    │    │              │    │ ECS Fargate │
+└──────────┘    └───────────┘    └──────────────┘    └─────────────┘
+```
 
-      - name: Tear down stack
-        if: always()
-        run: docker compose down -v
+---
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - run: pip install -r requirements-dev.txt
-      - name: Bandit SAST scan
-        run: bandit -r src/ -ll -ii
-      - name: Check for leaked secrets
-        uses: trufflesecurity/trufflehog@v3.88.0
-        with:
-          path: ./
-          base: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
-          head: ${{ github.event.pull_request.head.sha || 'HEAD' }}
+## 🛠️ Tech Stack
 
-vpc-024cb41f15497be7f
-subnet-0c2b441441cd36d42
-sg-02c423f0c70eb33ef
-630889618892
-vpc-024cb41f15497be7f
-subnet-0c2b441441cd36d42
-sg-02c423f0c70eb33ef
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **LLM** | LLaMA 3 8B via OpenRouter | Response generation |
+| **Embeddings** | Gemini Embedding | Text vectorization |
+| **Vector DB** | AstraDB | Review storage & retrieval |
+| **Backend** | FastAPI + Uvicorn | REST API |
+| **Frontend** | Vanilla JS + HTML | Chat UI |
+| **Container** | Docker | App packaging |
+| **Registry** | AWS ECR | Image storage |
+| **Deployment** | AWS ECS Fargate | Serverless containers |
+| **Secrets** | AWS SSM Parameter Store | Secure config |
+| **Logs** | AWS CloudWatch | Monitoring |
+| **CI/CD** | GitHub Actions | Automation |
 
-# again aupgter the cicd pipelin e cd ssm updated paramets updated upared .env file and some changed
+---
 
+## 🚀 Quick Start
 
-        "name": "subnetId",
-        "value": "subnet-0c2b441441cd36d42"
-    },
-    {
-        "name": "networkInterfaceId",
-        "value": "eni-0618e1c23e00b9021"
-    },
-    {
-        "name": "macAddress",
-        "value": "0e:d1:b8:f8:e5:03"
-    },
-    {
-        "name": "privateDnsName",
-        "value": "ip-172-31-35-137.ec2.internal"
-    },
-    {
-        "name": "privateIPv4Address",
-        "value": "172.31.35.137"
--- More  --
+### Prerequisites
 
-# update readme file
+- Python 3.10+
+- Docker Desktop
+- AWS CLI configured
+- AstraDB account
+- OpenRouter API key
+- Gemini API key
 
+### Local Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/customer_product_intelligence-bot
+cd customer_product_intelligence-bot
+
+# 2. Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# 5. Run the app
+uvicorn src.rag_app.main:app --reload --port 8000
+
+# 6. Visit the app
+open http://localhost:8000
+```
+
+### Environment Variables
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+OPEN_ROUTER_API_KEY=your_openrouter_key
+ASTRA_DB_API_ENDPOINT=your_astra_endpoint
+ASTRA_DB_APPLICATION_TOKEN=your_astra_token
+ASTRA_DB_KEYSPACE=default_keyspace
+ASTRA_DB_COLLECTION=ecommercedatanew
+API_KEY=your_api_key
+```
+
+---
+
+## ☁️ AWS Deployment
+
+### Infrastructure Setup
+
+```bash
+# Create ECS cluster
+aws ecs create-cluster --cluster-name product_cluster --region us-east-1
+
+# Create ECR repository
+aws ecr create-repository --repository-name product_intelligence_bot --region us-east-1
+
+# Add SSM parameters
+aws ssm put-parameter --name GEMINI_API_KEY --type SecureString --value "your_key"
+aws ssm put-parameter --name OPEN_ROUTER_API_KEY --type SecureString --value "your_key"
+aws ssm put-parameter --name ASTRA_DB_API_ENDPOINT --type SecureString --value "your_endpoint"
+aws ssm put-parameter --name ASTRA_DB_APPLICATION_TOKEN --type SecureString --value "your_token"
+aws ssm put-parameter --name ASTRA_DB_KEYSPACE --type SecureString --value "default_keyspace"
+aws ssm put-parameter --name ASTRA_DB_COLLECTION --type SecureString --value "ecommercedatanew"
+aws ssm put-parameter --name API_KEY --type SecureString --value "your_api_key"
+```
+
+### GitHub Secrets Required
+
+Add these in **Settings → Secrets → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+
+### Automated Deployment
+
+Every push to `main` triggers the full CI/CD pipeline:
+
+1. ✅ **CI** — runs tests with pytest
+2. 🐳 **Build** — builds Docker image
+3. 📦 **Push** — pushes to AWS ECR
+4. 📋 **Register** — creates new task definition with SSM secrets
+5. 🚀 **Deploy** — updates ECS Fargate service
+6. 🔍 **Smoke test** — verifies `/health` endpoint
+
+---
+
+## 📡 API Reference
+
+### Health Check
+```bash
+GET /health
+```
+```json
+{"status": "ok", "environment": "production", "uptime_seconds": 1234}
+```
+
+### Chat
+```bash
+POST /chat
+Headers: X-API-Key: your_api_key
+Content-Type: application/json
+
+{
+  "msg": "Are boAt headphones good for bass?"
+}
+```
+```json
+{
+  "response": "Based on customer reviews, boAt headphones are highly praised for bass quality...",
+  "request_id": "abc123",
+  "cached": false
+}
+```
+
+### Interactive Docs
+```
+http://your-ip:8000/docs
+```
+
+---
+
+## 🗂️ Project Structure
+
+```
+customer_product_intelligence-bot/
+├── src/
+│   └── rag_app/
+│       ├── api/              # API routes and endpoints
+│       ├── configure/        # Settings and configuration
+│       ├── core_app/         # RAG chain and retrieval logic
+│       └── main.py           # FastAPI app entry point
+├── templates/
+│   └── chat.html             # Frontend chat UI
+├── static/                   # Static assets
+├── tests/                    # Test suite
+├── .github/
+│   └── workflows/
+│       ├── ci.yml            # CI pipeline
+│       └── cd.yml            # CD pipeline
+├── Dockerfile                # Container definition
+├── requirements.txt          # Python dependencies
+└── README.md
+```
+
+---
+
+## 🔧 CI/CD Pipeline Details
+
+### CI Pipeline (`ci.yml`)
+- Triggered on every push to `main`
+- Runs pytest test suite
+- Linting and code quality checks
+
+### CD Pipeline (`cd.yml`)
+- Triggered when CI passes
+- Builds and pushes Docker image to ECR with git SHA tag
+- Registers new ECS task definition with SSM secrets injected
+- Auto-creates service if it doesn't exist, updates if it does
+- Waits for service stability
+- Runs smoke test against `/health` endpoint
+
+---
+
+## 💡 Key Design Decisions
+
+- **SSM over hardcoded secrets** — All sensitive config pulled from AWS SSM at runtime
+- **Immutable image tags** — Every deploy uses `github.sha` tag for traceability
+- **Graceful Redis fallback** — App runs without Redis, just without semantic caching
+- **API key auth** — All chat endpoints protected with `X-API-Key` header
+- **Production docs** — Swagger UI available at `/docs` for easy testing
+
+---
+
+## 🧹 Cleanup (Avoid AWS Costs)
+
+```bash
+# Scale down service
+aws ecs update-service --cluster product_cluster --service product-service --desired-count 0
+
+# Delete service
+aws ecs delete-service --cluster product_cluster --service product-service --force
+
+# Delete cluster
+aws ecs delete-cluster --cluster product_cluster
+
+# Delete ECR repo
+aws ecr delete-repository --repository-name product_intelligence_bot --force
+
+# Delete SSM params
+aws ssm delete-parameters --names GEMINI_API_KEY OPEN_ROUTER_API_KEY ASTRA_DB_API_ENDPOINT ASTRA_DB_APPLICATION_TOKEN ASTRA_DB_KEYSPACE ASTRA_DB_COLLECTION API_KEY
+```
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  Built with ❤️ using FastAPI, AstraDB, AWS ECS, and GitHub Actions
+</div>
