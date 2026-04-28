@@ -39,36 +39,12 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 ## 🏗️ System Architecture
 
-```
-User Request
-     │
-     ▼
-┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  FastAPI    │────▶│  RAG Chain   │────▶│   AstraDB       │
-│  Backend    │     │              │     │  (Vector Store) │
-└─────────────┘     └──────────────┘     └─────────────────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │  OpenRouter  │
-                    │  LLaMA 3 8B  │
-                    └──────────────┘
-```
+<img width="1536" height="1024" alt="ChatGPT Image Apr 28, 2026, 12_58_56 PM" src="https://github.com/user-attachments/assets/6b93bdc4-b6eb-4957-bf4f-6333bf892063" />
 
 ### CI/CD Pipeline
-
-```
-Push to main
-     │
-     ▼
-┌──────────┐    ┌───────────┐    ┌──────────────┐    ┌─────────────┐
-│ CI Tests │───▶│ Build     │───▶│ Push to ECR  │───▶│ Deploy to   │
-│ (pytest) │    │ Docker    │    │              │    │ ECS Fargate │
-└──────────┘    └───────────┘    └──────────────┘    └─────────────┘
-```
-
----
-
+    <img width="1881" height="836" alt="ChatGPT Image Apr 28, 2026, 01_00_48 PM" src="https://github.com/user-attachments/assets/adc35863-5481-4dab-88c7-4fbdacb85ed5" />
+ │
+     
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Purpose |
