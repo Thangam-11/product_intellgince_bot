@@ -284,10 +284,8 @@ kbd { background: var(--surface2); border: 1px solid var(--border2); border-radi
 <div class="toast" id="toast"></div>
 
 <script>
-// Derive API base from current page origin so it works in any environment.
-// Override by setting window.API_BASE before this script runs, or via a
-// meta tag / server-injected variable.
 const API = window.API_BASE || window.location.origin;
+const API_KEY = '399d8cfa9d9e24e534be19018e380f37b77791a0ac3117b15234842104ad1e90';
 
 const MAX_LEN = 1000;
 const WARN_AT = 800;
@@ -327,7 +325,6 @@ function updateCounter() {
 function newChat() {
   msgsEl.innerHTML = '';
   msgsEl.appendChild(welcome);
-  // FIX: always restore display so the welcome screen is actually visible.
   welcome.style.display = 'flex';
 }
 
@@ -335,8 +332,6 @@ function sendSug(t) { inp.value = t; updateCounter(); send(); }
 function hideWelcome() { welcome.style.display = 'none'; }
 function ts() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
-// FIX: escape first, then apply markdown so injected HTML in bot responses
-// cannot bypass sanitisation.
 function esc(t) {
   return t
     .replace(/&/g, '&amp;')
@@ -432,7 +427,10 @@ async function send() {
   try {
     const res = await fetch(`${API}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY
+      },
       body: JSON.stringify({ msg: msg })
     });
 
