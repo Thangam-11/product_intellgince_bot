@@ -8,6 +8,12 @@
 
 <img width="1591" height="916" alt="WhatsApp Image 2026-05-07 at 3 46 12 PM" src="https://github.com/user-attachments/assets/75bde84e-d54a-4720-a2b2-21db3736e308" />
 
+# Why RAG
+
+<img width="1552" height="487" alt="WhatsApp Image 2026-05-07 at 3 46 47 PM" src="https://github.com/user-attachments/assets/4010651f-5e34-4c72-96d4-2505b1ba86b0" />
+
+
+
 
 
 ## 📖 About This Project
