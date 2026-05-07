@@ -80,15 +80,52 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 <img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
 
+# Cloud Architecture Overview (AWS)
+
+The cloud deployment architecture is designed for scalable and production-ready deployment using AWS services.
+
+The deployment pipeline automates:
+- Docker image creation
+- Container registry management
+- ECS deployment
+- Cloud infrastructure integration
 
 
 
 <img width="1300" height="887" alt="image" src="https://github.com/user-attachments/assets/cce36227-2a92-4e22-bfc5-71e134ef5b0b" />
 
+# AWS Services Used
 
+## Amazon ECS
+Container orchestration and deployment
+
+## Amazon ECR
+Docker image registry
+
+## Application Load Balancer
+Traffic routing and scalability
+
+## Amazon S3
+Document and artifact storage
+
+## AWS IAM
+Access management and permissions
+
+## AWS CloudWatch
+Monitoring and logging
 
 <img width="1402" height="505" alt="image" src="https://github.com/user-attachments/assets/e6d79d00-8dad-477f-91ed-30d4f67f3be4" />
 
+
+# Cloud Deployment Workflow
+
+1. Developer pushes code to GitHub repository
+2. GitHub Actions triggers CI/CD workflow
+3. Docker image is built automatically
+4. Image is pushed to AWS ECR
+5. AWS ECS deploys updated containers
+6. Application becomes accessible through Load Balancer
+7. AI services communicate with AstraDB and OpenRouter APIs
 
 ### CI/CD Pipeline
 <img width="1881" height="836" alt="ChatGPT Image Apr 28, 2026, 01_00_48 PM" src="https://github.com/user-attachments/assets/adc35863-5481-4dab-88c7-4fbdacb85ed5" />
