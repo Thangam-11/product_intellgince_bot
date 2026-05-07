@@ -2,13 +2,8 @@
 
 > An AI-powered e-commerce product intelligence system using RAG (Retrieval-Augmented Generation) — fully automated from code push to production on AWS.
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)
-![AWS ECS](https://img.shields.io/badge/AWS-ECS%20Fargate-orange?logo=amazon-aws)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-black?logo=github-actions)
+<img width="1596" height="727" alt="WhatsApp Image 2026-05-07 at 3 45 24 PM" src="https://github.com/user-attachments/assets/a3e1c367-47aa-44a3-aa5d-6bb5fd78390c" />
 
----
 
 ## 📖 About This Project
 
