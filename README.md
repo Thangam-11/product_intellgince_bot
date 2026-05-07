@@ -37,6 +37,9 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 ---
 
+# local device Architecture
+
+<img width="1252" height="522" alt="image" src="https://github.com/user-attachments/assets/e7079932-a864-415c-94d4-d5ab1812eab4" />
 
 
 <img width="1536" height="1024" alt="ChatGPT Image Apr 28, 2026, 12_58_56 PM" src="https://github.com/user-attachments/assets/6b93bdc4-b6eb-4957-bf4f-6333bf892063" />
