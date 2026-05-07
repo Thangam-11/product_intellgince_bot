@@ -37,13 +37,11 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 ---
 
-# local device Architecture
-
-<img width="630" height="432" alt="image" src="https://github.com/user-attachments/assets/d12c5414-855a-4c2b-b1dc-59a0da5169c8" />
-
-
 
 <img width="1536" height="1024" alt="ChatGPT Image Apr 28, 2026, 12_58_56 PM" src="https://github.com/user-attachments/assets/6b93bdc4-b6eb-4957-bf4f-6333bf892063" />
+
+<img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
+
 
 ### CI/CD Pipeline
 <img width="1881" height="836" alt="ChatGPT Image Apr 28, 2026, 01_00_48 PM" src="https://github.com/user-attachments/assets/adc35863-5481-4dab-88c7-4fbdacb85ed5" />
