@@ -40,9 +40,6 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 <img width="1536" height="1024" alt="ChatGPT Image Apr 28, 2026, 12_58_56 PM" src="https://github.com/user-attachments/assets/6b93bdc4-b6eb-4957-bf4f-6333bf892063" />
 
-<img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
-
-
 
 # Local Architecture Components
 
@@ -80,6 +77,11 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 - Docker Compose
 
 ---
+
+<img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
+
+
+
 
 <img width="1300" height="887" alt="image" src="https://github.com/user-attachments/assets/cce36227-2a92-4e22-bfc5-71e134ef5b0b" />
 
