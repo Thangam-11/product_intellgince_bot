@@ -42,6 +42,9 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 <img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
 
+<img width="1300" height="887" alt="image" src="https://github.com/user-attachments/assets/cce36227-2a92-4e22-bfc5-71e134ef5b0b" />
+
+
 
 ### CI/CD Pipeline
 <img width="1881" height="836" alt="ChatGPT Image Apr 28, 2026, 01_00_48 PM" src="https://github.com/user-attachments/assets/adc35863-5481-4dab-88c7-4fbdacb85ed5" />
