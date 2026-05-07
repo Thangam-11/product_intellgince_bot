@@ -357,5 +357,11 @@ MIT License — see [LICENSE](LICENSE) file for details.
 ---
 
 <div align="center">
+
+ Author
+
+Thangarasu M
+
+AI/ML Engineer | MLOps Enthusiast | Generative AI Developer
   Built with ❤️ using FastAPI, AstraDB, AWS ECS, and GitHub Actions
 </div>
