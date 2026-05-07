@@ -42,8 +42,12 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 
 <img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
 
+
 <img width="1300" height="887" alt="image" src="https://github.com/user-attachments/assets/cce36227-2a92-4e22-bfc5-71e134ef5b0b" />
 
+
+
+<img width="1402" height="505" alt="image" src="https://github.com/user-attachments/assets/e6d79d00-8dad-477f-91ed-30d4f67f3be4" />
 
 
 ### CI/CD Pipeline
