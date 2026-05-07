@@ -43,6 +43,44 @@ The bot retrieves relevant reviews from a vector database and generates accurate
 <img width="1290" height="887" alt="image" src="https://github.com/user-attachments/assets/87d0cffc-480c-4129-aa16-084e4b6b214c" />
 
 
+
+# Local Architecture Components
+
+## Frontend
+- HTML
+- CSS
+- JavaScript
+- Static file serving using Nginx
+
+## Backend
+- FastAPI
+- REST APIs
+- Request validation
+- AI inference handling
+
+## RAG Pipeline
+- LangChain orchestration
+- Query understanding
+- Retrieval workflow
+- Context augmentation
+- Response generation
+
+## Vector Database
+- AstraDB
+- Semantic search
+- Document embeddings
+- Context retrieval
+
+## LLM & Embedding Models
+- OpenRouter LLM APIs
+- Google Gemini embedding models
+
+## Containerization
+- Docker
+- Docker Compose
+
+---
+
 <img width="1300" height="887" alt="image" src="https://github.com/user-attachments/assets/cce36227-2a92-4e22-bfc5-71e134ef5b0b" />
 
 
